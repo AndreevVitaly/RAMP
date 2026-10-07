@@ -12,6 +12,12 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.data["step_count"], 7)
         self.assertIn("geometry", response.data)
         self.assertEqual(len(response.data["geometry"]["step_points"]), 7)
+        self.assertEqual(response.data["geometry"]["support"]["type"], "folding")
+        self.assertEqual(response.data["geometry"]["support_hinge"]["hinge_count"], 2)
+        self.assertEqual(
+            response.data["geometry"]["support_stop"]["contact_point"],
+            response.data["geometry"]["points"]["base_end"],
+        )
 
     def test_calculates_preview_with_custom_values(self):
         response = self.client.post(self.url, {"height_cm": 50, "ramp_length_cm": 120, "width_cm": 55, "side_rails": True}, format="json")

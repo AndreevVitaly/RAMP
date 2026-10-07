@@ -3,6 +3,9 @@ from math import cos, hypot, radians, sin, sqrt
 
 BASE_VERTICAL_OFFSET_CM = 5.0
 SUPPORT_BASE_ANGLE_DEG = 105.0
+SUPPORT_FOLD_DIRECTION = "inward"
+SUPPORT_DEPLOYED_STATE = "deployed"
+SUPPORT_HINGE_COUNT = 2
 
 
 class RampGeometryError(ValueError):
@@ -74,6 +77,28 @@ def build_side_profile(
         for position in step_positions_cm
     ]
 
+    hinge_point = intersection.to_dict()
+    contact_point = base_end.to_dict()
+    support = {
+        "type": "folding",
+        "state": SUPPORT_DEPLOYED_STATE,
+        "hinged": True,
+        "fold_direction": SUPPORT_FOLD_DIRECTION,
+        "base_angle_deg": SUPPORT_BASE_ANGLE_DEG,
+        "length_cm": round(support_length, 4),
+        "upper_connection": {
+            "type": "hinge",
+            "point": hinge_point,
+            "hinge_count": SUPPORT_HINGE_COUNT,
+        },
+        "lower_connection": {
+            "type": "free_contact",
+            "point": contact_point,
+            "hinged": False,
+            "rests_on": "support_stop",
+        },
+    }
+
     return {
         "points": {
             "ramp_start": ramp_start.to_dict(),
@@ -89,5 +114,19 @@ def build_side_profile(
             hypot(intersection.x - base_end.x, intersection.y - base_end.y), 4
         ),
         "step_points": step_points,
+        "support": support,
+        "support_hinge": {
+            "type": "rotation_axis",
+            "point": hinge_point,
+            "hinge_count": SUPPORT_HINGE_COUNT,
+            "connects": ["ramp_surface", "support"],
+        },
+        "support_stop": {
+            "type": "mechanical_stop",
+            "purpose": "support_lower_end_stop",
+            "contact_point": contact_point,
+            "mounted_on": "base",
+            "dimensions_defined": False,
+        },
     }
 

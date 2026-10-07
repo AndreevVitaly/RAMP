@@ -32,6 +32,10 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .support-line { stroke: #7d6047; stroke-width: 7; stroke-linecap: round; }
 .control-line { stroke: #91a095; stroke-width: 1.5; stroke-dasharray: 7 6; }
 .rail-point { fill: #eadcba; stroke: #6b5839; stroke-width: 2.5; }
+.support-stop { fill: #b98555; stroke: #684a31; stroke-width: 2; }
+.hinge-outer { fill: #f8f4e9; stroke: #9a6e42; stroke-width: 3; }
+.hinge-axis { fill: #684a31; }
+.mechanics-label { font-weight: 700; fill: #684a31; }
 .offset-line, .dimension-cap { stroke: #b26b43; stroke-width: 1.5; }
 .key-point { fill: #fff; stroke: #263c30; stroke-width: 2; }
 .point-label { font-weight: 800; fill: #263c30; }

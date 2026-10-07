@@ -2,7 +2,13 @@ from django.test import SimpleTestCase
 
 from math import cos, hypot, radians, sin
 
-from ramps.geometry import BASE_VERTICAL_OFFSET_CM, SUPPORT_BASE_ANGLE_DEG
+from ramps.geometry import (
+    BASE_VERTICAL_OFFSET_CM,
+    SUPPORT_BASE_ANGLE_DEG,
+    SUPPORT_DEPLOYED_STATE,
+    SUPPORT_FOLD_DIRECTION,
+    SUPPORT_HINGE_COUNT,
+)
 from ramps.services import RampGeometryError, calculate_ramp_configuration, calculate_step_positions
 
 
@@ -85,4 +91,28 @@ class RampCalculationTests(SimpleTestCase):
             with self.subTest(point=point):
                 self.assertAlmostEqual(point["y"], (ramp_end["y"] / ramp_end["x"]) * point["x"], places=3)
                 self.assertAlmostEqual(hypot(point["x"], point["y"]), point["distance_cm"], places=3)
+
+    def test_support_is_a_folding_hinged_component(self):
+        geometry = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)["geometry"]
+        support = geometry["support"]
+        hinge = geometry["support_hinge"]
+        self.assertEqual(support["type"], "folding")
+        self.assertEqual(support["state"], SUPPORT_DEPLOYED_STATE)
+        self.assertTrue(support["hinged"])
+        self.assertEqual(support["fold_direction"], SUPPORT_FOLD_DIRECTION)
+        self.assertEqual(support["base_angle_deg"], SUPPORT_BASE_ANGLE_DEG)
+        self.assertEqual(hinge["hinge_count"], SUPPORT_HINGE_COUNT)
+        self.assertEqual(hinge["point"], geometry["points"]["support_ramp_intersection"])
+
+    def test_support_lower_end_is_free_and_rests_on_stop(self):
+        geometry = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)["geometry"]
+        lower_connection = geometry["support"]["lower_connection"]
+        stop = geometry["support_stop"]
+        self.assertEqual(lower_connection["type"], "free_contact")
+        self.assertFalse(lower_connection["hinged"])
+        self.assertEqual(lower_connection["rests_on"], "support_stop")
+        self.assertEqual(stop["type"], "mechanical_stop")
+        self.assertFalse(stop["dimensions_defined"])
+        self.assertEqual(stop["contact_point"], geometry["points"]["base_end"])
+        self.assertEqual(lower_connection["point"], stop["contact_point"])
 

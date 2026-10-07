@@ -73,6 +73,8 @@ export default function App() {
             <div><dt>Длина основания</dt><dd>{result.geometry.base_length_cm} см</dd></div>
             <div><dt>Длина стойки</dt><dd>{result.geometry.support_length_cm} см</dd></div>
             <div><dt>Угол стойки</dt><dd>{result.geometry.support_base_angle_deg}°</dd></div>
+            <div><dt>Механика стойки</dt><dd>Складная, 2 петли</dd></div>
+            <div><dt>Рабочее состояние</dt><dd>{result.geometry.support.state === 'deployed' ? 'Разложена' : 'Сложена'}</dd></div>
             <div className="wide"><dt>Положения реек</dt><dd>{result.step_positions_cm.join(', ')} см</dd></div>
           </dl></div>
         </>}
