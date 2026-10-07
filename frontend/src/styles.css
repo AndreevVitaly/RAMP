@@ -47,6 +47,8 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .projection-base { fill: #38544318; stroke: #385443; stroke-width: 3; }
 .projection-base.axon { fill: #38544324; }
 .projection-step { stroke: #b89255; stroke-width: 4; }
+.top-product-view .projection-step { stroke: #bca77e; stroke-width: 4; }
+.top-product-view .product-surface { stroke: #343630; stroke-width: 2; }
 .projection-step.faint { opacity: .45; stroke-width: 2; }
 .projection-hinge { stroke: #9a6e42; stroke-width: 5; stroke-dasharray: 6 4; }
 .projection-stop { stroke: #b26b43; stroke-width: 7; }

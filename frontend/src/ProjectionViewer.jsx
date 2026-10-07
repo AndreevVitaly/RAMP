@@ -10,19 +10,23 @@ function frame(points, width = 700, height = 410, margin = 55) {
   return { width, height, x: (v) => margin + (v - minX) * scale, y: (v) => height - margin - (v - minY) * scale }
 }
 
+function centeredFrame(points, width = 700, height = 410, margin = 24) {
+  const xs = points.map((p) => p[0]); const ys = points.map((p) => p[1])
+  const minX = Math.min(...xs); const maxX = Math.max(...xs); const minY = Math.min(...ys); const maxY = Math.max(...ys)
+  const contentWidth = Math.max(maxX - minX, 1); const contentHeight = Math.max(maxY - minY, 1)
+  const scale = Math.min((width - margin * 2) / contentWidth, (height - margin * 2) / contentHeight)
+  const offsetX = (width - contentWidth * scale) / 2
+  const offsetY = (height - contentHeight * scale) / 2
+  return { width, height, x: (v) => offsetX + (v - minX) * scale, y: (v) => height - offsetY - (v - minY) * scale }
+}
+
 function TopView({ ramp }) {
-  const g = ramp.geometry_3d; const { horizontal_run_cm: run, base_length_cm: base, width_cm: w } = g.dimensions
-  const f = frame([[0, 0], [run, w]])
-  return <Projection title="Вид сверху · XY"><svg viewBox="0 0 700 410">
-    <polygon points={` ${f.x(0)},${f.y(0)} ${f.x(run)},${f.y(0)} ${f.x(run)},${f.y(w)} ${f.x(0)},${f.y(w)}`} fill={`${COLORS[ramp.color]}22`} stroke={COLORS[ramp.color]} className="projection-surface" />
-    <polygon points={`${f.x(0)},${f.y(0)} ${f.x(base)},${f.y(0)} ${f.x(base)},${f.y(w)} ${f.x(0)},${f.y(w)}`} className="projection-base" />
+  const g = ramp.geometry_3d; const { horizontal_run_cm: run, width_cm: w } = g.dimensions
+  const f = centeredFrame([[0, 0], [run, w]])
+  return <figure className="diagram-card projection-card top-product-view"><svg viewBox="0 0 700 410" role="img" aria-label="Пандус, вид сверху">
+    <polygon points={`${f.x(0)},${f.y(0)} ${f.x(run)},${f.y(0)} ${f.x(run)},${f.y(w)} ${f.x(0)},${f.y(w)}`} fill={COLORS[ramp.color]} stroke={COLORS[ramp.color]} className="projection-surface product-surface" />
     {g.steps.map((s) => <line key={s.distance_cm} x1={f.x(s.left.x)} y1={f.y(0)} x2={f.x(s.right.x)} y2={f.y(w)} className="projection-step" />)}
-    <line x1={f.x(g.hinge_axis.left.x)} y1={f.y(0)} x2={f.x(g.hinge_axis.right.x)} y2={f.y(w)} className="projection-hinge" />
-    <line x1={f.x(g.support_stop.left.x)} y1={f.y(0)} x2={f.x(g.support_stop.right.x)} y2={f.y(w)} className="projection-stop" />
-    <text x={f.x(run / 2)} y={f.y(w) - 18} textAnchor="middle">горизонтальная проекция {run} см</text>
-    <text x={f.x(0) + 10} y={f.y(w / 2)}>ширина {w} см</text>
-    <text x={f.x(g.support_stop.left.x)} y={f.y(0) + 28} textAnchor="middle">упор (схематично)</text>
-  </svg></Projection>
+  </svg></figure>
 }
 
 function FrontView({ ramp }) {
