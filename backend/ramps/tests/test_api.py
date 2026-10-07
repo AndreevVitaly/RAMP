@@ -14,6 +14,8 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(len(response.data["geometry"]["step_points"]), 7)
         self.assertEqual(response.data["geometry"]["support"]["type"], "folding")
         self.assertEqual(response.data["geometry"]["support_hinge"]["hinge_count"], 2)
+        self.assertEqual(response.data["geometry"]["support"]["hinge_position_ratio"], 0.75)
+        self.assertEqual(response.data["geometry"]["support"]["hinge_distance_cm"], 75.0)
         self.assertEqual(
             response.data["geometry"]["support_stop"]["contact_point"],
             response.data["geometry"]["points"]["support_foot"],

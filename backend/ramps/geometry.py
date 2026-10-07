@@ -3,6 +3,7 @@ from math import cos, hypot, radians, sin, sqrt
 
 BASE_VERTICAL_OFFSET_CM = 5.0
 SUPPORT_FLOOR_ANGLE_DEG = 105.0
+SUPPORT_HINGE_POSITION_RATIO = 0.75
 # Backward-compatible name used by the existing API.
 SUPPORT_BASE_ANGLE_DEG = SUPPORT_FLOOR_ANGLE_DEG
 SUPPORT_FOLD_DIRECTION = "inward"
@@ -50,27 +51,8 @@ def build_side_profile(
     vertical_projection = Point(horizontal_run, 0.0)  # V
     base_end = Point(base_length, 0.0)  # C
 
-    legacy_support_angle_rad = radians(SUPPORT_FLOOR_ANGLE_DEG)
-    legacy_support_dx = cos(legacy_support_angle_rad)
-    legacy_support_dy = sin(legacy_support_angle_rad)
-    ramp_slope = height_cm / horizontal_run
-
-    # Preserve the established hinge D on the ramp. The old support line was
-    # used only to locate this hinge; C is no longer the support foot.
-    denominator = legacy_support_dy - ramp_slope * legacy_support_dx
-    if abs(denominator) < 1e-9:
-        raise RampGeometryError("Опорная стойка параллельна рабочей поверхности.")
-    legacy_distance = ramp_slope * base_end.x / denominator
-    intersection = Point(
-        x=base_end.x + legacy_distance * legacy_support_dx,
-        y=legacy_distance * legacy_support_dy,
-    )  # D
-
-    ramp_parameter = intersection.x / horizontal_run
-    if legacy_distance <= 0 or not 0 < ramp_parameter < 1:
-        raise RampGeometryError(
-            "Опорная стойка не пересекает рабочую поверхность внутри конструкции."
-        )
+    hinge_distance = ramp_length_cm * SUPPORT_HINGE_POSITION_RATIO
+    intersection = point_on_ramp(hinge_distance, ramp_length_cm, ramp_end)  # D
 
     # The physical S→D vector must point up and right. The specified 105° is
     # the obtuse angle to the floor, so its +X direction is the supplement 75°.
@@ -98,12 +80,18 @@ def build_side_profile(
     contact_point = support_foot.to_dict()
     support = {
         "type": "folding",
+        "folding": True,
         "state": SUPPORT_DEPLOYED_STATE,
         "hinged": True,
         "fold_direction": SUPPORT_FOLD_DIRECTION,
         "base_angle_deg": SUPPORT_FLOOR_ANGLE_DEG,
         "floor_angle_deg": SUPPORT_FLOOR_ANGLE_DEG,
         "direction_from_positive_x_deg": support_direction_deg,
+        "hinge_position_ratio": SUPPORT_HINGE_POSITION_RATIO,
+        "hinge_distance_cm": round(hinge_distance, 4),
+        "hinge": hinge_point,
+        "foot": contact_point,
+        "hinge_count": SUPPORT_HINGE_COUNT,
         "length_cm": round(support_length, 4),
         "upper_connection": {
             "type": "hinge",
@@ -133,8 +121,14 @@ def build_side_profile(
         "support_base_angle_deg": SUPPORT_FLOOR_ANGLE_DEG,
         "support_floor_angle_deg": SUPPORT_FLOOR_ANGLE_DEG,
         "support_foot_to_base_end_cm": round(base_end.x - support_foot.x, 4),
+        "measurements": {
+            "ramp_start_to_hinge_cm": round(hinge_distance, 4),
+            "ramp_start_to_support_foot_cm": round(support_foot.x, 4),
+            "support_foot_to_base_end_cm": round(base_end.x - support_foot.x, 4),
+            "support_length_cm": round(support_length, 4),
+        },
         "support_length_cm": round(
-            hypot(intersection.x - base_end.x, intersection.y - base_end.y), 4
+            hypot(intersection.x - support_foot.x, intersection.y - support_foot.y), 4
         ),
         "step_points": step_points,
         "support": support,

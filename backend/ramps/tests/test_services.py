@@ -9,6 +9,7 @@ from ramps.geometry import (
     SUPPORT_FOLD_DIRECTION,
     SUPPORT_FLOOR_ANGLE_DEG,
     SUPPORT_HINGE_COUNT,
+    SUPPORT_HINGE_POSITION_RATIO,
 )
 from ramps.services import RampGeometryError, calculate_ramp_configuration, calculate_step_positions
 
@@ -73,6 +74,43 @@ class RampCalculationTests(SimpleTestCase):
         self.assertEqual(s["y"], 0.0)
         self.assertEqual(geometry["support_floor_angle_deg"], 105)
 
+    def test_support_hinge_is_at_75_percent_for_50_by_100(self):
+        result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)
+        geometry = result["geometry"]
+        d = geometry["points"]["support_hinge"]
+        self.assertAlmostEqual(d["x"], 64.9519, places=4)
+        self.assertEqual(d["y"], 37.5)
+        self.assertEqual(geometry["support"]["hinge_position_ratio"], SUPPORT_HINGE_POSITION_RATIO)
+        self.assertEqual(geometry["support"]["hinge_distance_cm"], 75.0)
+        self.assertEqual(geometry["measurements"]["ramp_start_to_hinge_cm"], 75.0)
+        self.assertEqual(geometry["support_length_cm"], geometry["support"]["length_cm"])
+        self.assertEqual(geometry["support_length_cm"], geometry["measurements"]["support_length_cm"])
+
+    def test_support_geometry_scales_for_similar_ramps(self):
+        normalized = []
+        foot_ratios = []
+        for height, length in ((50, 100), (60, 120), (70, 140)):
+            result = calculate_ramp_configuration(height_cm=height, ramp_length_cm=length)
+            geometry = result["geometry"]
+            d = geometry["points"]["support_hinge"]
+            s = geometry["points"]["support_foot"]
+            normalized.append((d["x"] / result["horizontal_run_cm"], d["y"] / height))
+            foot_ratios.append(s["x"] / height)
+        for x_ratio, y_ratio in normalized:
+            self.assertAlmostEqual(x_ratio, 0.75, places=3)
+            self.assertAlmostEqual(y_ratio, 0.75, places=3)
+        self.assertAlmostEqual(foot_ratios[0], foot_ratios[1], places=3)
+        self.assertAlmostEqual(foot_ratios[1], foot_ratios[2], places=3)
+
+    def test_custom_length_keeps_hinge_at_75_percent(self):
+        result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=120)
+        geometry = result["geometry"]
+        d = geometry["points"]["support_hinge"]
+        self.assertAlmostEqual(d["x"] / result["horizontal_run_cm"], 0.75, places=3)
+        self.assertAlmostEqual(d["y"] / result["height_cm"], 0.75, places=3)
+        self.assertEqual(geometry["support"]["hinge_distance_cm"], 90.0)
+        self.assertEqual(geometry["support_stop"]["contact_point"], geometry["points"]["support_foot"])
+
     def test_support_direction_matches_105_degree_floor_angle(self):
         geometry = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)["geometry"]
         d = geometry["points"]["support_hinge"]
@@ -96,7 +134,10 @@ class RampCalculationTests(SimpleTestCase):
         self.assertLess(custom["angle_deg"], standard["angle_deg"])
         self.assertGreater(custom["horizontal_run_cm"], standard["horizontal_run_cm"])
         self.assertGreater(custom["geometry"]["base_length_cm"], standard["geometry"]["base_length_cm"])
-        self.assertNotEqual(custom["geometry"]["support_length_cm"], standard["geometry"]["support_length_cm"])
+        # With the same height, D.y = 0.75 * height and a fixed support angle,
+        # so the support length stays equal while its X position changes.
+        self.assertEqual(custom["geometry"]["support_length_cm"], standard["geometry"]["support_length_cm"])
+        self.assertNotEqual(custom["geometry"]["points"]["support_foot"], standard["geometry"]["points"]["support_foot"])
         self.assertNotEqual(custom["geometry"]["step_points"], standard["geometry"]["step_points"])
 
     def test_step_points_lie_on_ramp_at_requested_distance(self):

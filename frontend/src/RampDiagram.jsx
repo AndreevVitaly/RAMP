@@ -9,6 +9,7 @@ export default function RampDiagram({ ramp }) {
   const geometry = ramp.geometry
   const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_hinge: D, support_foot: S } = geometry.points
   const support = geometry.support
+  const measurements = geometry.measurements
   const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
   const usableWidth = canvas.width - canvas.left - canvas.right
   const usableHeight = canvas.height - canvas.top - canvas.bottom
@@ -35,7 +36,7 @@ export default function RampDiagram({ ramp }) {
         <rect x={sx(S.x) - 18} y={floorY - 12} width="18" height="12" rx="1.5" className="support-stop" />
         <circle cx={sx(D.x)} cy={sy(D.y)} r="9" className="hinge-outer" />
         <circle cx={sx(D.x)} cy={sy(D.y)} r="3.5" className="hinge-axis" />
-        <text x={sx(D.x) - 16} y={sy(D.y) - 18} textAnchor="end" className="mechanics-label">D — шарнир</text>
+        <text x={sx(D.x) - 16} y={sy(D.y) - 18} textAnchor="end" className="mechanics-label">D — шарнир, 75%</text>
         <text x={sx(S.x) - 22} y={floorY - 18} textAnchor="end" className="mechanics-label">упор</text>
 
         <line x1={sx(C.x)} y1={floorY + 34} x2={sx(V.x)} y2={floorY + 34} className="offset-line" />
@@ -44,10 +45,12 @@ export default function RampDiagram({ ramp }) {
         <text x={(sx(C.x) + sx(V.x)) / 2} y={floorY + 57} textAnchor="middle">отступ {geometry.base_vertical_offset_cm} см</text>
 
         <text x={sx(B.x) + 12} y={(sy(B.y) + floorY) / 2}>высота {ramp.height_cm} см</text>
-        <text x={(sx(A.x) + sx(B.x)) / 2 - 18} y={(sy(A.y) + sy(B.y)) / 2 - 17} textAnchor="middle">поверхность {ramp.ramp_length_cm} см</text>
-        <text x={(sx(A.x) + sx(C.x)) / 2} y={floorY + 22} textAnchor="middle">основание {geometry.base_length_cm} см</text>
+        <text x={(sx(A.x) + sx(D.x)) / 2 - 18} y={(sy(A.y) + sy(D.y)) / 2 - 17} textAnchor="middle">A→D {measurements.ramp_start_to_hinge_cm} см</text>
+        <text x={(sx(A.x) + sx(S.x)) / 2} y={floorY + 22} textAnchor="middle">A→S {measurements.ramp_start_to_support_foot_cm} см</text>
+        <text x={(sx(S.x) + sx(C.x)) / 2} y={floorY + 22} textAnchor="middle">S→C {measurements.support_foot_to_base_end_cm} см</text>
         <text x={sx(A.x) + 54} y={floorY - 12}>наклон {ramp.angle_deg}°</text>
-        <text x={(sx(S.x) + sx(D.x)) / 2 + 14} y={(sy(S.y) + sy(D.y)) / 2} textAnchor="start">стойка {support.floor_angle_deg}° к полу</text>
+        <text x={(sx(S.x) + sx(D.x)) / 2 + 14} y={(sy(S.y) + sy(D.y)) / 2 - 9} textAnchor="start">D→S {measurements.support_length_cm} см</text>
+        <text x={(sx(S.x) + sx(D.x)) / 2 + 14} y={(sy(S.y) + sy(D.y)) / 2 + 10} textAnchor="start">{support.floor_angle_deg}° к полу</text>
         <text x={sx(S.x)} y={floorY + 43} textAnchor="middle">S — опора стойки</text>
 
         {[[A, 'A'], [B, 'B'], [V, 'V'], [C, 'C — конец основания']].map(([p, label]) => (

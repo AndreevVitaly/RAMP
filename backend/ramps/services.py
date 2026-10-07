@@ -71,7 +71,7 @@ def calculate_ramp_configuration(
         recommended_length_cm=recommended_length,
         uses_recommended_length=uses_recommended,
         angle_deg=round(degrees(asin(height / length)), 2),
-        horizontal_run_cm=round(sqrt(length**2 - height**2), 2),
+        horizontal_run_cm=round(sqrt(length**2 - height**2), 4),
         step_count=len(positions),
         step_positions_cm=positions,
         geometry=geometry,
