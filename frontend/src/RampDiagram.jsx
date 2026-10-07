@@ -6,38 +6,47 @@ const COLORS = {
 }
 
 export default function RampDiagram({ ramp }) {
-  const left = 55
-  const bottom = 245
-  const maxWidth = 480
-  const maxHeight = 180
-  const scale = Math.min(maxWidth / ramp.horizontal_run_cm, maxHeight / ramp.height_cm)
-  const run = ramp.horizontal_run_cm * scale
-  const rise = ramp.height_cm * scale
-  const topX = left + run
-  const topY = bottom - rise
-  const ux = run / ramp.ramp_length_cm
-  const uy = -rise / ramp.ramp_length_cm
-  const nx = -uy
-  const ny = ux
+  const geometry = ramp.geometry
+  const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_ramp_intersection: D } = geometry.points
+  const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
+  const usableWidth = canvas.width - canvas.left - canvas.right
+  const usableHeight = canvas.height - canvas.top - canvas.bottom
+  const scale = Math.min(usableWidth / V.x, usableHeight / B.y)
+  const floorY = canvas.height - canvas.bottom
+  const sx = (x) => canvas.left + x * scale
+  // Backend uses Y up; SVG uses Y down, so only this display transform inverts Y.
+  const sy = (y) => floorY - y * scale
 
   return (
     <figure className="diagram-card">
-      <figcaption>Схема пандуса сбоку</figcaption>
-      <svg viewBox="0 0 600 300" role="img" aria-label="Схема рассчитанного пандуса">
-        <line x1="28" y1={bottom} x2="570" y2={bottom} className="floor" />
-        <polygon points={`${left},${bottom} ${topX},${topY} ${topX},${bottom}`} fill={`${COLORS[ramp.color]}22`} />
-        <line x1={left} y1={bottom} x2={topX} y2={topY} stroke={COLORS[ramp.color]} className="ramp-line" />
-        <line x1={topX} y1={topY} x2={topX} y2={bottom} className="measure" />
-        {ramp.step_positions_cm.map((position) => {
-          const x = left + ux * position * scale
-          const y = bottom + uy * position * scale
-          return <line key={position} x1={x - nx * 7} y1={y - ny * 7} x2={x + nx * 7} y2={y + ny * 7} className="step" />
-        })}
-        <text x={topX + 10} y={(topY + bottom) / 2}>h = {ramp.height_cm} см</text>
-        <text x={(left + topX) / 2} y={bottom + 27} textAnchor="middle">проекция {ramp.horizontal_run_cm} см</text>
-        <text x={(left + topX) / 2 - 15} y={(bottom + topY) / 2 - 16} textAnchor="middle">{ramp.ramp_length_cm} см</text>
+      <figcaption>Геометрический профиль пандуса</figcaption>
+      <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} role="img" aria-label="Боковой профиль пандуса с основанием и опорной стойкой">
+        <line x1="34" y1={floorY} x2={canvas.width - 34} y2={floorY} className="floor" />
+        <line x1={sx(B.x)} y1={sy(B.y)} x2={sx(V.x)} y2={sy(V.y)} className="control-line" />
+        <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(C.x)} y2={sy(C.y)} className="base-line" />
+        <line x1={sx(C.x)} y1={sy(C.y)} x2={sx(D.x)} y2={sy(D.y)} className="support-line" />
+        <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(B.x)} y2={sy(B.y)} stroke={COLORS[ramp.color]} className="ramp-line" />
+
+        {geometry.step_points.map((rail) => (
+          <circle key={rail.distance_cm} cx={sx(rail.x)} cy={sy(rail.y)} r="5.5" className="rail-point" />
+        ))}
+
+        <line x1={sx(C.x)} y1={floorY + 34} x2={sx(V.x)} y2={floorY + 34} className="offset-line" />
+        <line x1={sx(C.x)} y1={floorY + 25} x2={sx(C.x)} y2={floorY + 43} className="dimension-cap" />
+        <line x1={sx(V.x)} y1={floorY + 25} x2={sx(V.x)} y2={floorY + 43} className="dimension-cap" />
+        <text x={(sx(C.x) + sx(V.x)) / 2} y={floorY + 57} textAnchor="middle">отступ {geometry.base_vertical_offset_cm} см</text>
+
+        <text x={sx(B.x) + 12} y={(sy(B.y) + floorY) / 2}>высота {ramp.height_cm} см</text>
+        <text x={(sx(A.x) + sx(B.x)) / 2 - 18} y={(sy(A.y) + sy(B.y)) / 2 - 17} textAnchor="middle">поверхность {ramp.ramp_length_cm} см</text>
+        <text x={(sx(A.x) + sx(C.x)) / 2} y={floorY + 22} textAnchor="middle">основание {geometry.base_length_cm} см</text>
+        <text x={sx(A.x) + 54} y={floorY - 12}>наклон {ramp.angle_deg}°</text>
+        <text x={(sx(C.x) + sx(D.x)) / 2 - 14} y={(sy(C.y) + sy(D.y)) / 2} textAnchor="end">стойка {geometry.support_base_angle_deg}°</text>
+
+        {[[A, 'A'], [B, 'B'], [V, 'V'], [C, 'C'], [D, 'D']].map(([p, label]) => (
+          <g key={label}><circle cx={sx(p.x)} cy={sy(p.y)} r="3.5" className="key-point" /><text x={sx(p.x) + 8} y={sy(p.y) - 8} className="point-label">{label}</text></g>
+        ))}
       </svg>
-      <p>Схема показывает расчётные пропорции. Конструкция основания пока не определена.</p>
+      <p>A–B — рабочая поверхность, A–C — основание, C–D — рассчитанная опорная стойка. Пунктир B–V показывает вертикальную проекцию.</p>
     </figure>
   )
 }

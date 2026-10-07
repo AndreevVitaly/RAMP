@@ -1,15 +1,13 @@
 from dataclasses import asdict, dataclass
 from math import asin, degrees, sqrt
 
+from .geometry import RampGeometryError, build_side_profile
+
 DEFAULT_WIDTH_CM = 40.0
 DEFAULT_COLOR = "dark_gray"
 ALLOWED_COLORS = ("dark_gray", "light_gray", "black", "beige")
 FIRST_STEP_CM = 5.0
 STEP_INTERVAL_CM = 14.0
-
-
-class RampGeometryError(ValueError):
-    pass
 
 
 @dataclass(frozen=True)
@@ -23,6 +21,7 @@ class RampConfiguration:
     horizontal_run_cm: float
     step_count: int
     step_positions_cm: list[float]
+    geometry: dict
     color: str
     side_rails: bool
 
@@ -54,18 +53,17 @@ def calculate_ramp_configuration(
     uses_recommended = ramp_length_cm is None
     length = recommended_length if uses_recommended else float(ramp_length_cm)
 
-    if height <= 0:
-        raise RampGeometryError("Высота должна быть больше 0 см.")
-    if length <= 0:
-        raise RampGeometryError("Длина пандуса должна быть больше 0 см.")
     if width <= 0:
         raise RampGeometryError("Ширина должна быть больше 0 см.")
-    if length < height:
-        raise RampGeometryError("Длина наклонной поверхности не может быть меньше высоты.")
     if color not in ALLOWED_COLORS:
         raise RampGeometryError("Недопустимый цвет покрытия.")
 
     positions = calculate_step_positions(length)
+    geometry = build_side_profile(
+        height_cm=height,
+        ramp_length_cm=length,
+        step_positions_cm=positions,
+    )
     result = RampConfiguration(
         height_cm=height,
         width_cm=width,
@@ -76,6 +74,7 @@ def calculate_ramp_configuration(
         horizontal_run_cm=round(sqrt(length**2 - height**2), 2),
         step_count=len(positions),
         step_positions_cm=positions,
+        geometry=geometry,
         color=color,
         side_rails=bool(side_rails),
     )

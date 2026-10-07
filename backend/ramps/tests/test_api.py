@@ -10,6 +10,8 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["ramp_length_cm"], 100)
         self.assertEqual(response.data["step_count"], 7)
+        self.assertIn("geometry", response.data)
+        self.assertEqual(len(response.data["geometry"]["step_points"]), 7)
 
     def test_calculates_preview_with_custom_values(self):
         response = self.client.post(self.url, {"height_cm": 50, "ramp_length_cm": 120, "width_cm": 55, "side_rails": True}, format="json")
@@ -18,7 +20,7 @@ class RampCalculationApiTests(APITestCase):
         self.assertTrue(response.data["side_rails"])
 
     def test_rejects_invalid_input(self):
-        for payload in ({"height_cm": 0}, {"height_cm": 50, "ramp_length_cm": -1}, {"height_cm": 50, "ramp_length_cm": 40}, {"height_cm": 50, "color": "red"}):
+        for payload in ({"height_cm": 0}, {"height_cm": 50, "ramp_length_cm": -1}, {"height_cm": 50, "ramp_length_cm": 50}, {"height_cm": 50, "ramp_length_cm": 40}, {"height_cm": 50, "color": "red"}):
             with self.subTest(payload=payload):
                 response = self.client.post(self.url, payload, format="json")
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -24,12 +24,17 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .results { min-width: 0; display: grid; gap: 24px; }
 .diagram-card { margin: 0; padding: 24px; }
 .diagram-card figcaption { font-weight: 700; margin-bottom: 8px; }
-.diagram-card svg { display: block; width: 100%; min-height: 260px; }
+.diagram-card svg { display: block; width: 100%; min-height: 300px; }
 .diagram-card p { margin: 0; color: #777a74; font-size: 13px; }
 .floor { stroke: #7a7e76; stroke-width: 2; }
 .ramp-line { stroke-width: 12; stroke-linecap: round; }
-.measure { stroke: #91a095; stroke-width: 1.5; stroke-dasharray: 6; }
-.step { stroke: #e3d7bc; stroke-width: 5; stroke-linecap: round; }
+.base-line { stroke: #385443; stroke-width: 7; stroke-linecap: round; }
+.support-line { stroke: #7d6047; stroke-width: 7; stroke-linecap: round; }
+.control-line { stroke: #91a095; stroke-width: 1.5; stroke-dasharray: 7 6; }
+.rail-point { fill: #eadcba; stroke: #6b5839; stroke-width: 2.5; }
+.offset-line, .dimension-cap { stroke: #b26b43; stroke-width: 1.5; }
+.key-point { fill: #fff; stroke: #263c30; stroke-width: 2; }
+.point-label { font-weight: 800; fill: #263c30; }
 svg text { font-size: 13px; fill: #555a53; }
 .metrics { padding: 24px; }
 dl { margin: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: #e5e2d9; border: 1px solid #e5e2d9; border-radius: 12px; overflow: hidden; }
