@@ -7,6 +7,7 @@ from ramps.geometry import (
     SUPPORT_BASE_ANGLE_DEG,
     SUPPORT_DEPLOYED_STATE,
     SUPPORT_FOLD_DIRECTION,
+    SUPPORT_FLOOR_ANGLE_DEG,
     SUPPORT_HINGE_COUNT,
 )
 from ramps.services import RampGeometryError, calculate_ramp_configuration, calculate_step_positions
@@ -58,16 +59,30 @@ class RampCalculationTests(SimpleTestCase):
         self.assertEqual(points["base_end"]["y"], 0.0)
         self.assertEqual(geometry["base_vertical_offset_cm"], BASE_VERTICAL_OFFSET_CM)
 
-    def test_support_intersects_ramp_at_105_degrees(self):
+    def test_support_hinge_is_on_ramp_and_foot_is_inside_base(self):
         geometry = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)["geometry"]
+        a = geometry["points"]["ramp_start"]
         c = geometry["points"]["base_end"]
-        d = geometry["points"]["support_ramp_intersection"]
+        d = geometry["points"]["support_hinge"]
+        s = geometry["points"]["support_foot"]
         b = geometry["points"]["ramp_end"]
-        support_length = hypot(d["x"] - c["x"], d["y"] - c["y"])
         self.assertAlmostEqual(d["y"], (b["y"] / b["x"]) * d["x"], places=3)
-        self.assertAlmostEqual(d["x"], c["x"] + support_length * cos(radians(SUPPORT_BASE_ANGLE_DEG)), places=3)
-        self.assertAlmostEqual(d["y"], support_length * sin(radians(SUPPORT_BASE_ANGLE_DEG)), places=3)
-        self.assertAlmostEqual(geometry["support_base_angle_deg"], 105)
+        self.assertGreater(s["x"], a["x"])
+        self.assertLess(s["x"], c["x"])
+        self.assertLess(s["x"], d["x"])
+        self.assertEqual(s["y"], 0.0)
+        self.assertEqual(geometry["support_floor_angle_deg"], 105)
+
+    def test_support_direction_matches_105_degree_floor_angle(self):
+        geometry = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)["geometry"]
+        d = geometry["points"]["support_hinge"]
+        s = geometry["points"]["support_foot"]
+        support_length = hypot(d["x"] - s["x"], d["y"] - s["y"])
+        direction = 180 - SUPPORT_FLOOR_ANGLE_DEG
+        self.assertAlmostEqual(d["x"], s["x"] + support_length * cos(radians(direction)), places=3)
+        self.assertAlmostEqual(d["y"], s["y"] + support_length * sin(radians(direction)), places=3)
+        self.assertGreater(d["x"], s["x"])
+        self.assertGreater(d["y"], s["y"])
 
     def test_geometry_for_60_by_120(self):
         result = calculate_ramp_configuration(height_cm=60, ramp_length_cm=120)
@@ -102,7 +117,7 @@ class RampCalculationTests(SimpleTestCase):
         self.assertEqual(support["fold_direction"], SUPPORT_FOLD_DIRECTION)
         self.assertEqual(support["base_angle_deg"], SUPPORT_BASE_ANGLE_DEG)
         self.assertEqual(hinge["hinge_count"], SUPPORT_HINGE_COUNT)
-        self.assertEqual(hinge["point"], geometry["points"]["support_ramp_intersection"])
+        self.assertEqual(hinge["point"], geometry["points"]["support_hinge"])
 
     def test_support_lower_end_is_free_and_rests_on_stop(self):
         geometry = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)["geometry"]
@@ -113,6 +128,7 @@ class RampCalculationTests(SimpleTestCase):
         self.assertEqual(lower_connection["rests_on"], "support_stop")
         self.assertEqual(stop["type"], "mechanical_stop")
         self.assertFalse(stop["dimensions_defined"])
-        self.assertEqual(stop["contact_point"], geometry["points"]["base_end"])
+        self.assertEqual(stop["contact_point"], geometry["points"]["support_foot"])
+        self.assertNotEqual(stop["contact_point"], geometry["points"]["base_end"])
         self.assertEqual(lower_connection["point"], stop["contact_point"])
 

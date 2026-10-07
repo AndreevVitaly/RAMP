@@ -16,6 +16,10 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.data["geometry"]["support_hinge"]["hinge_count"], 2)
         self.assertEqual(
             response.data["geometry"]["support_stop"]["contact_point"],
+            response.data["geometry"]["points"]["support_foot"],
+        )
+        self.assertNotEqual(
+            response.data["geometry"]["points"]["support_foot"],
             response.data["geometry"]["points"]["base_end"],
         )
 

@@ -7,7 +7,7 @@ const COLORS = {
 
 export default function RampDiagram({ ramp }) {
   const geometry = ramp.geometry
-  const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_ramp_intersection: D } = geometry.points
+  const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_hinge: D, support_foot: S } = geometry.points
   const support = geometry.support
   const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
   const usableWidth = canvas.width - canvas.left - canvas.right
@@ -25,18 +25,18 @@ export default function RampDiagram({ ramp }) {
         <line x1="34" y1={floorY} x2={canvas.width - 34} y2={floorY} className="floor" />
         <line x1={sx(B.x)} y1={sy(B.y)} x2={sx(V.x)} y2={sy(V.y)} className="control-line" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(C.x)} y2={sy(C.y)} className="base-line" />
-        <line x1={sx(C.x)} y1={sy(C.y)} x2={sx(D.x)} y2={sy(D.y)} className="support-line" />
+        <line x1={sx(S.x)} y1={sy(S.y)} x2={sx(D.x)} y2={sy(D.y)} className="support-line" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(B.x)} y2={sy(B.y)} stroke={COLORS[ramp.color]} className="ramp-line" />
 
         {geometry.step_points.map((rail) => (
           <circle key={rail.distance_cm} cx={sx(rail.x)} cy={sy(rail.y)} r="5.5" className="rail-point" />
         ))}
 
-        <rect x={sx(C.x) - 18} y={floorY - 12} width="18" height="12" rx="1.5" className="support-stop" />
+        <rect x={sx(S.x) - 18} y={floorY - 12} width="18" height="12" rx="1.5" className="support-stop" />
         <circle cx={sx(D.x)} cy={sy(D.y)} r="9" className="hinge-outer" />
         <circle cx={sx(D.x)} cy={sy(D.y)} r="3.5" className="hinge-axis" />
         <text x={sx(D.x) - 16} y={sy(D.y) - 18} textAnchor="end" className="mechanics-label">D — шарнир</text>
-        <text x={sx(C.x) - 22} y={floorY - 18} textAnchor="end" className="mechanics-label">упор</text>
+        <text x={sx(S.x) - 22} y={floorY - 18} textAnchor="end" className="mechanics-label">упор</text>
 
         <line x1={sx(C.x)} y1={floorY + 34} x2={sx(V.x)} y2={floorY + 34} className="offset-line" />
         <line x1={sx(C.x)} y1={floorY + 25} x2={sx(C.x)} y2={floorY + 43} className="dimension-cap" />
@@ -47,13 +47,14 @@ export default function RampDiagram({ ramp }) {
         <text x={(sx(A.x) + sx(B.x)) / 2 - 18} y={(sy(A.y) + sy(B.y)) / 2 - 17} textAnchor="middle">поверхность {ramp.ramp_length_cm} см</text>
         <text x={(sx(A.x) + sx(C.x)) / 2} y={floorY + 22} textAnchor="middle">основание {geometry.base_length_cm} см</text>
         <text x={sx(A.x) + 54} y={floorY - 12}>наклон {ramp.angle_deg}°</text>
-        <text x={(sx(C.x) + sx(D.x)) / 2 - 14} y={(sy(C.y) + sy(D.y)) / 2} textAnchor="end">складная стойка {support.base_angle_deg}°</text>
+        <text x={(sx(S.x) + sx(D.x)) / 2 + 14} y={(sy(S.y) + sy(D.y)) / 2} textAnchor="start">стойка {support.floor_angle_deg}° к полу</text>
+        <text x={sx(S.x)} y={floorY + 43} textAnchor="middle">S — опора стойки</text>
 
-        {[[A, 'A'], [B, 'B'], [V, 'V'], [C, 'C']].map(([p, label]) => (
+        {[[A, 'A'], [B, 'B'], [V, 'V'], [C, 'C — конец основания']].map(([p, label]) => (
           <g key={label}><circle cx={sx(p.x)} cy={sy(p.y)} r="3.5" className="key-point" /><text x={sx(p.x) + 8} y={sy(p.y) - 8} className="point-label">{label}</text></g>
         ))}
       </svg>
-      <p>Стойка вращается вокруг верхнего шарнира D и складывается внутрь. Её свободный нижний конец в рабочем положении опирается на упор у C.</p>
+      <p>Стойка находится внутри профиля: от опоры S она идёт вверх-вправо к шарниру D. Точка C обозначает только конец основания.</p>
     </figure>
   )
 }
