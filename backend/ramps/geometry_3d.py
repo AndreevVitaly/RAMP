@@ -52,9 +52,13 @@ def build_ramp_geometry_3d(
     }
     steps = [
         {
-            "distance_cm": step["distance_cm"],
-            "left": point(step["x"], 0, step["y"]),
-            "right": point(step["x"], width_cm, step["y"]),
+            "start_distance_cm": step["start_distance_cm"],
+            "end_distance_cm": step["end_distance_cm"],
+            "width_cm": step["width_cm"],
+            "start_left": point(step["start"]["x"], 0, step["start"]["y"]),
+            "start_right": point(step["start"]["x"], width_cm, step["start"]["y"]),
+            "end_left": point(step["end"]["x"], 0, step["end"]["y"]),
+            "end_right": point(step["end"]["x"], width_cm, step["end"]["y"]),
         }
         for step in step_points
     ]

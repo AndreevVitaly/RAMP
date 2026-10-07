@@ -9,6 +9,7 @@ SUPPORT_BASE_ANGLE_DEG = SUPPORT_FLOOR_ANGLE_DEG
 SUPPORT_FOLD_DIRECTION = "inward"
 SUPPORT_DEPLOYED_STATE = "deployed"
 SUPPORT_HINGE_COUNT = 2
+STEP_WIDTH_CM = 3.0
 
 
 class RampGeometryError(ValueError):
@@ -68,13 +69,23 @@ def build_side_profile(
             "Нижний конец опорной стойки не помещается внутри основания."
         )
 
-    step_points = [
-        {
-            "distance_cm": round(position, 4),
-            **point_on_ramp(position, ramp_length_cm, ramp_end).to_dict(),
-        }
-        for position in step_positions_cm
-    ]
+    step_points = []
+    for position in step_positions_cm:
+        end_position = position + STEP_WIDTH_CM
+        start_point = point_on_ramp(position, ramp_length_cm, ramp_end)
+        end_point = point_on_ramp(end_position, ramp_length_cm, ramp_end)
+        step_points.append(
+            {
+                "start_distance_cm": round(position, 4),
+                "end_distance_cm": round(end_position, 4),
+                "width_cm": STEP_WIDTH_CM,
+                "start": start_point.to_dict(),
+                "end": end_point.to_dict(),
+                # Start coordinate aliases keep older API consumers functional.
+                "distance_cm": round(position, 4),
+                **start_point.to_dict(),
+            }
+        )
 
     hinge_point = intersection.to_dict()
     contact_point = support_foot.to_dict()

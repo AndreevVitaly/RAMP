@@ -22,9 +22,11 @@ class RampGeometry3DTests(SimpleTestCase):
         model = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)["geometry_3d"]
         for step in model["steps"]:
             with self.subTest(step=step):
-                self.assertEqual(step["left"]["x"], step["right"]["x"])
-                self.assertEqual(step["left"]["z"], step["right"]["z"])
-                self.assertEqual(step["right"]["y"] - step["left"]["y"], 40)
+                self.assertEqual(step["start_left"]["x"], step["start_right"]["x"])
+                self.assertEqual(step["start_left"]["z"], step["start_right"]["z"])
+                self.assertEqual(step["start_right"]["y"] - step["start_left"]["y"], 40)
+                self.assertEqual(step["end_right"]["y"] - step["end_left"]["y"], 40)
+                self.assertEqual(step["end_distance_cm"] - step["start_distance_cm"], 3)
 
     def test_custom_width_only_changes_y_extent(self):
         standard = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)["geometry_3d"]
@@ -34,7 +36,7 @@ class RampGeometry3DTests(SimpleTestCase):
             p55 = custom["ramp_surface"]["corners"][name]
             self.assertEqual((p40["x"], p40["z"]), (p55["x"], p55["z"]))
         self.assertEqual(custom["ramp_surface"]["corners"]["b_right"]["y"], 55)
-        self.assertEqual(custom["steps"][0]["right"]["y"], 55)
+        self.assertEqual(custom["steps"][0]["start_right"]["y"], 55)
         self.assertEqual(custom["support"]["center_y_cm"], 27.5)
 
     def test_projections_can_share_the_same_b_point(self):

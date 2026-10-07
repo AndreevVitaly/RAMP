@@ -11,7 +11,7 @@ from ramps.geometry import (
     SUPPORT_HINGE_COUNT,
     SUPPORT_HINGE_POSITION_RATIO,
 )
-from ramps.services import RampGeometryError, calculate_ramp_configuration, calculate_step_positions
+from ramps.services import STEP_WIDTH_CM, RampGeometryError, calculate_ramp_configuration, calculate_step_positions
 
 
 class RampCalculationTests(SimpleTestCase):
@@ -33,6 +33,23 @@ class RampCalculationTests(SimpleTestCase):
 
     def test_step_positions_for_100_cm(self):
         self.assertEqual(calculate_step_positions(100), [5, 19, 33, 47, 61, 75, 89])
+
+    def test_step_intervals_for_100_cm(self):
+        result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)
+        intervals = [(step["start_distance_cm"], step["end_distance_cm"]) for step in result["geometry"]["step_points"]]
+        self.assertEqual(intervals, [(5, 8), (19, 22), (33, 36), (47, 50), (61, 64), (75, 78), (89, 92)])
+        self.assertEqual(result["step_width_cm"], STEP_WIDTH_CM)
+        for previous, current in zip(result["geometry"]["step_points"], result["geometry"]["step_points"][1:]):
+            self.assertEqual(current["start_distance_cm"] - previous["start_distance_cm"], 14)
+            self.assertEqual(current["start_distance_cm"] - previous["end_distance_cm"], 11)
+
+    def test_steps_fit_for_supported_lengths(self):
+        expected_counts = {80: 6, 100: 7, 120: 9, 140: 10}
+        for length, count in expected_counts.items():
+            with self.subTest(length=length):
+                result = calculate_ramp_configuration(height_cm=40, ramp_length_cm=length)
+                self.assertEqual(result["step_count"], count)
+                self.assertTrue(all(step["end_distance_cm"] <= length for step in result["geometry"]["step_points"]))
 
     def test_all_colors_are_accepted(self):
         for color in ("dark_gray", "light_gray", "black", "beige"):
@@ -145,8 +162,9 @@ class RampCalculationTests(SimpleTestCase):
         ramp_end = result["geometry"]["points"]["ramp_end"]
         for point in result["geometry"]["step_points"]:
             with self.subTest(point=point):
-                self.assertAlmostEqual(point["y"], (ramp_end["y"] / ramp_end["x"]) * point["x"], places=3)
-                self.assertAlmostEqual(hypot(point["x"], point["y"]), point["distance_cm"], places=3)
+                self.assertAlmostEqual(point["start"]["y"], (ramp_end["y"] / ramp_end["x"]) * point["start"]["x"], places=3)
+                self.assertAlmostEqual(hypot(point["start"]["x"], point["start"]["y"]), point["start_distance_cm"], places=3)
+                self.assertAlmostEqual(hypot(point["end"]["x"], point["end"]["y"]), point["end_distance_cm"], places=3)
 
     def test_support_is_a_folding_hinged_component(self):
         geometry = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)["geometry"]

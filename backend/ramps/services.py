@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass
 from math import asin, degrees, sqrt
 
-from .geometry import RampGeometryError, build_side_profile
+from .geometry import STEP_WIDTH_CM, RampGeometryError, build_side_profile
 from .geometry_3d import build_ramp_geometry_3d
 
 DEFAULT_WIDTH_CM = 40.0
@@ -21,6 +21,7 @@ class RampConfiguration:
     angle_deg: float
     horizontal_run_cm: float
     step_count: int
+    step_width_cm: float
     step_positions_cm: list[float]
     geometry: dict
     geometry_3d: dict
@@ -35,7 +36,7 @@ def calculate_step_positions(ramp_length_cm: float) -> list[float]:
     """Возвращает координаты реек вдоль наклонной поверхности."""
     positions = []
     position = FIRST_STEP_CM
-    while position <= ramp_length_cm:
+    while position + STEP_WIDTH_CM <= ramp_length_cm:
         positions.append(position)
         position += STEP_INTERVAL_CM
     return positions
@@ -87,6 +88,7 @@ def calculate_ramp_configuration(
         angle_deg=round(degrees(asin(height / length)), 2),
         horizontal_run_cm=round(horizontal_run, 4),
         step_count=len(positions),
+        step_width_cm=STEP_WIDTH_CM,
         step_positions_cm=positions,
         geometry=geometry,
         geometry_3d=geometry_3d,

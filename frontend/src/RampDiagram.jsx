@@ -30,7 +30,7 @@ export default function RampDiagram({ ramp }) {
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(B.x)} y2={sy(B.y)} stroke={COLORS[ramp.color]} className="ramp-line" />
 
         {geometry.step_points.map((rail) => (
-          <circle key={rail.distance_cm} cx={sx(rail.x)} cy={sy(rail.y)} r="5.5" className="rail-point" />
+          <line key={rail.start_distance_cm} x1={sx(rail.start.x)} y1={sy(rail.start.y)} x2={sx(rail.end.x)} y2={sy(rail.end.y)} className="side-step-band" />
         ))}
 
         <rect x={sx(S.x) - 18} y={floorY - 12} width="18" height="12" rx="1.5" className="support-stop" />
