@@ -10,6 +10,7 @@ export default function RampDiagram({ ramp }) {
   const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_hinge: D, support_foot: S } = geometry.points
   const support = geometry.support
   const measurements = geometry.measurements
+  const sideRails = ramp.geometry_3d.side_rails
   const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
   const usableWidth = canvas.width - canvas.left - canvas.right
   const usableHeight = canvas.height - canvas.top - canvas.bottom
@@ -28,6 +29,7 @@ export default function RampDiagram({ ramp }) {
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(C.x)} y2={sy(C.y)} className="base-line" />
         <line x1={sx(S.x)} y1={sy(S.y)} x2={sx(D.x)} y2={sy(D.y)} className="support-line" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(B.x)} y2={sy(B.y)} stroke={COLORS[ramp.color]} className="ramp-line" />
+        {sideRails.enabled && <polygon points={`${sx(sideRails.left.bottom_start.x)},${sy(sideRails.left.bottom_start.z)} ${sx(sideRails.left.bottom_end.x)},${sy(sideRails.left.bottom_end.z)} ${sx(sideRails.left.top_end.x)},${sy(sideRails.left.top_end.z)} ${sx(sideRails.left.top_start.x)},${sy(sideRails.left.top_start.z)}`} fill={COLORS[ramp.color]} className="side-rail-profile" />}
 
         {geometry.step_points.map((rail) => (
           <line key={rail.start_distance_cm} x1={sx(rail.start.x)} y1={sy(rail.start.y)} x2={sx(rail.end.x)} y2={sy(rail.end.y)} className="side-step-band" />

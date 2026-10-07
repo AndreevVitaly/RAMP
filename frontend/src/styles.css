@@ -40,6 +40,7 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .control-line { stroke: #91a095; stroke-width: 1.5; stroke-dasharray: 7 6; }
 .rail-point { fill: #eadcba; stroke: #6b5839; stroke-width: 2.5; }
 .side-step-band { stroke: #bca77e; stroke-width: 8; stroke-linecap: butt; }
+.side-rail-profile { stroke: rgba(255, 255, 255, .5); stroke-width: 1.2; filter: brightness(1.08); }
 .support-stop { fill: #b98555; stroke: #684a31; stroke-width: 2; }
 .hinge-outer { fill: #f8f4e9; stroke: #9a6e42; stroke-width: 3; }
 .hinge-axis { fill: #684a31; }
@@ -51,6 +52,9 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .projection-step-band { stroke: rgba(255, 255, 255, .58); stroke-width: 1.5; filter: brightness(1.18); }
 .projection-step-band.front { opacity: .22; filter: none; }
 .projection-step-band.axon-step { stroke: rgba(255, 255, 255, .65); stroke-width: 1.2; }
+.top-side-rail, .front-side-rail { stroke-width: 5; filter: brightness(1.22); }
+.front-side-rail { stroke-linecap: square; }
+.axon-side-rail { stroke: rgba(255, 255, 255, .55); stroke-width: 1.2; filter: brightness(1.1); }
 .top-product-view .product-surface { stroke: #343630; stroke-width: 2; }
 .projection-step.faint { opacity: .45; stroke-width: 2; }
 .projection-hinge { stroke: #9a6e42; stroke-width: 5; stroke-dasharray: 6 4; }

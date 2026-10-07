@@ -78,6 +78,7 @@ def calculate_ramp_configuration(
         step_points=geometry["step_points"],
         support_hinge=geometry["points"]["support_hinge"],
         support_foot=geometry["points"]["support_foot"],
+        side_rails_enabled=bool(side_rails),
     )
     result = RampConfiguration(
         height_cm=height,

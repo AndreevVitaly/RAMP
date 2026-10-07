@@ -1,4 +1,7 @@
 from dataclasses import asdict, dataclass
+from math import cos, radians, sin
+
+SIDE_RAIL_HEIGHT_CM = 5.0
 
 
 @dataclass(frozen=True)
@@ -22,6 +25,7 @@ def build_ramp_geometry_3d(
     step_points: list[dict],
     support_hinge: dict,
     support_foot: dict,
+    side_rails_enabled: bool,
 ) -> dict:
     """Extrude the authoritative X/Z side profile across parameterized Y width."""
     center_y = width_cm / 2
@@ -64,6 +68,33 @@ def build_ramp_geometry_3d(
     ]
     hinge_center = point(support_hinge["x"], center_y, support_hinge["y"])
     foot_center = point(support_foot["x"], center_y, support_foot["y"])
+    side_rails = {"enabled": False, "count": 0}
+    if side_rails_enabled:
+        angle_rad = radians(angle_deg)
+        normal_x = -sin(angle_rad)
+        normal_z = cos(angle_rad)
+
+        def rail_at(y):
+            return {
+                "bottom_start": point(0, y, 0),
+                "bottom_end": point(horizontal_run_cm, y, height_cm),
+                "top_start": point(SIDE_RAIL_HEIGHT_CM * normal_x, y, SIDE_RAIL_HEIGHT_CM * normal_z),
+                "top_end": point(horizontal_run_cm + SIDE_RAIL_HEIGHT_CM * normal_x, y, height_cm + SIDE_RAIL_HEIGHT_CM * normal_z),
+            }
+
+        area = ramp_length_cm * SIDE_RAIL_HEIGHT_CM
+        side_rails = {
+            "enabled": True,
+            "count": 2,
+            "height_cm": SIDE_RAIL_HEIGHT_CM,
+            "length_cm": round(ramp_length_cm, 4),
+            "area_each_cm2": round(area, 4),
+            "area_total_cm2": round(area * 2, 4),
+            "thickness_defined": False,
+            "normal_xz": {"x": round(normal_x, 6), "z": round(normal_z, 6)},
+            "left": rail_at(0),
+            "right": rail_at(width_cm),
+        }
     return {
         "coordinate_system": {
             "origin": "ramp_start",
@@ -101,5 +132,6 @@ def build_ramp_geometry_3d(
             "dimensions_defined": False,
             "display_note": "Схематично — размеры не определены",
         },
+        "side_rails": side_rails,
     }
 
