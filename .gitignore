@@ -3,6 +3,7 @@
 __pycache__/
 *.py[cod]
 *.sqlite3
+*.log
 .pytest_cache/
 backend/staticfiles/
 frontend/node_modules/
