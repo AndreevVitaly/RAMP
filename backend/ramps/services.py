@@ -2,6 +2,7 @@ from dataclasses import asdict, dataclass
 from math import asin, degrees, sqrt
 
 from .geometry import RampGeometryError, build_side_profile
+from .geometry_3d import build_ramp_geometry_3d
 
 DEFAULT_WIDTH_CM = 40.0
 DEFAULT_COLOR = "dark_gray"
@@ -22,6 +23,7 @@ class RampConfiguration:
     step_count: int
     step_positions_cm: list[float]
     geometry: dict
+    geometry_3d: dict
     color: str
     side_rails: bool
 
@@ -64,6 +66,18 @@ def calculate_ramp_configuration(
         ramp_length_cm=length,
         step_positions_cm=positions,
     )
+    horizontal_run = sqrt(length**2 - height**2)
+    geometry_3d = build_ramp_geometry_3d(
+        height_cm=height,
+        ramp_length_cm=length,
+        width_cm=width,
+        angle_deg=round(degrees(asin(height / length)), 2),
+        horizontal_run_cm=horizontal_run,
+        base_length_cm=geometry["base_length_cm"],
+        step_points=geometry["step_points"],
+        support_hinge=geometry["points"]["support_hinge"],
+        support_foot=geometry["points"]["support_foot"],
+    )
     result = RampConfiguration(
         height_cm=height,
         width_cm=width,
@@ -71,10 +85,11 @@ def calculate_ramp_configuration(
         recommended_length_cm=recommended_length,
         uses_recommended_length=uses_recommended,
         angle_deg=round(degrees(asin(height / length)), 2),
-        horizontal_run_cm=round(sqrt(length**2 - height**2), 4),
+        horizontal_run_cm=round(horizontal_run, 4),
         step_count=len(positions),
         step_positions_cm=positions,
         geometry=geometry,
+        geometry_3d=geometry_3d,
         color=color,
         side_rails=bool(side_rails),
     )

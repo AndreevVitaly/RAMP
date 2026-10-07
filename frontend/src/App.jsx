@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { calculateRamp } from './api'
-import RampDiagram from './RampDiagram'
+import ProjectionViewer from './ProjectionViewer'
 
 const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, color: 'dark_gray', side_rails: false }
 
@@ -63,7 +63,7 @@ export default function App() {
         {loading && <div className="notice">Пересчитываем…</div>}
         {error && <div className="notice error">{error}</div>}
         {result && <>
-          <RampDiagram ramp={result} />
+          <ProjectionViewer ramp={result} />
           <div className="panel metrics"><h2>Результат расчёта</h2><dl>
             <div><dt>Рекомендуемая длина</dt><dd>{result.recommended_length_cm} см</dd></div>
             <div><dt>Выбранная длина</dt><dd>{result.ramp_length_cm} см</dd></div>

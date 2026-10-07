@@ -1,0 +1,101 @@
+from dataclasses import asdict, dataclass
+
+
+@dataclass(frozen=True)
+class Point3D:
+    x: float
+    y: float
+    z: float
+
+    def to_dict(self) -> dict[str, float]:
+        return {key: round(value, 4) for key, value in asdict(self).items()}
+
+
+def build_ramp_geometry_3d(
+    *,
+    height_cm: float,
+    ramp_length_cm: float,
+    width_cm: float,
+    angle_deg: float,
+    horizontal_run_cm: float,
+    base_length_cm: float,
+    step_points: list[dict],
+    support_hinge: dict,
+    support_foot: dict,
+) -> dict:
+    """Extrude the authoritative X/Z side profile across parameterized Y width."""
+    center_y = width_cm / 2
+
+    def point(x, y, z):
+        return Point3D(x, y, z).to_dict()
+
+    ramp_surface = {
+        "length_cm": round(ramp_length_cm, 4),
+        "width_cm": round(width_cm, 4),
+        "angle_deg": angle_deg,
+        "corners": {
+            "a_left": point(0, 0, 0),
+            "a_right": point(0, width_cm, 0),
+            "b_left": point(horizontal_run_cm, 0, height_cm),
+            "b_right": point(horizontal_run_cm, width_cm, height_cm),
+        },
+    }
+    base = {
+        "length_cm": round(base_length_cm, 4),
+        "width_cm": round(width_cm, 4),
+        "corners": {
+            "a_left": point(0, 0, 0),
+            "a_right": point(0, width_cm, 0),
+            "c_left": point(base_length_cm, 0, 0),
+            "c_right": point(base_length_cm, width_cm, 0),
+        },
+    }
+    steps = [
+        {
+            "distance_cm": step["distance_cm"],
+            "left": point(step["x"], 0, step["y"]),
+            "right": point(step["x"], width_cm, step["y"]),
+        }
+        for step in step_points
+    ]
+    hinge_center = point(support_hinge["x"], center_y, support_hinge["y"])
+    foot_center = point(support_foot["x"], center_y, support_foot["y"])
+    return {
+        "coordinate_system": {
+            "origin": "ramp_start",
+            "x": "horizontal_run",
+            "y": "width",
+            "z": "height",
+            "units": "cm",
+        },
+        "dimensions": {
+            "height_cm": round(height_cm, 4),
+            "ramp_length_cm": round(ramp_length_cm, 4),
+            "horizontal_run_cm": round(horizontal_run_cm, 4),
+            "base_length_cm": round(base_length_cm, 4),
+            "width_cm": round(width_cm, 4),
+        },
+        "ramp_surface": ramp_surface,
+        "base": base,
+        "steps": steps,
+        "support": {
+            "axis": {"hinge": hinge_center, "foot": foot_center},
+            "center_y_cm": round(center_y, 4),
+            "cross_section_defined": False,
+        },
+        "hinge_axis": {
+            "center": hinge_center,
+            "left": point(support_hinge["x"], 0, support_hinge["y"]),
+            "right": point(support_hinge["x"], width_cm, support_hinge["y"]),
+            "hinge_count": 2,
+            "hinge_positions_y_defined": False,
+        },
+        "support_stop": {
+            "contact_center": foot_center,
+            "left": point(support_foot["x"], 0, 0),
+            "right": point(support_foot["x"], width_cm, 0),
+            "dimensions_defined": False,
+            "display_note": "Схематично — размеры не определены",
+        },
+    }
+

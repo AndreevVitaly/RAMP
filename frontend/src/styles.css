@@ -22,6 +22,13 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .toggle input { width: 18px; height: 18px; accent-color: #385443; }
 .link-button { border: 0; background: none; padding: 0; color: #385443; text-align: left; cursor: pointer; text-decoration: underline; }
 .results { min-width: 0; display: grid; gap: 24px; }
+.projection-viewer { display: grid; gap: 12px; }
+.view-tabs { display: flex; gap: 7px; flex-wrap: wrap; }
+.view-tabs button { border: 1px solid #c9cec8; background: #fff; color: #385443; border-radius: 999px; padding: 9px 14px; cursor: pointer; font: inherit; font-size: 13px; }
+.view-tabs button.active { background: #385443; color: #fff; border-color: #385443; }
+.all-views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.all-views .diagram-card { padding: 14px; }
+.all-views .diagram-card svg { min-height: 180px; }
 .diagram-card { margin: 0; padding: 24px; }
 .diagram-card figcaption { font-weight: 700; margin-bottom: 8px; }
 .diagram-card svg { display: block; width: 100%; min-height: 300px; }
@@ -36,6 +43,13 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .hinge-outer { fill: #f8f4e9; stroke: #9a6e42; stroke-width: 3; }
 .hinge-axis { fill: #684a31; }
 .mechanics-label { font-weight: 700; fill: #684a31; }
+.projection-surface { stroke-width: 2.5; }
+.projection-base { fill: #38544318; stroke: #385443; stroke-width: 3; }
+.projection-base.axon { fill: #38544324; }
+.projection-step { stroke: #b89255; stroke-width: 4; }
+.projection-step.faint { opacity: .45; stroke-width: 2; }
+.projection-hinge { stroke: #9a6e42; stroke-width: 5; stroke-dasharray: 6 4; }
+.projection-stop { stroke: #b26b43; stroke-width: 7; }
 .offset-line, .dimension-cap { stroke: #b26b43; stroke-width: 1.5; }
 .key-point { fill: #fff; stroke: #263c30; stroke-width: 2; }
 .point-label { font-weight: 800; fill: #263c30; }
@@ -48,5 +62,5 @@ dd { margin: 5px 0 0; font-weight: 700; }
 .wide { grid-column: 1 / -1; }
 .notice { padding: 14px 18px; border-radius: 12px; background: #e4ebe6; color: #385443; }
 .notice.error { background: #f6dfdb; color: #8c3328; }
-@media (max-width: 760px) { main { padding-top: 24px; } header { display: block; } .brand { margin-bottom: 20px; } .workspace { grid-template-columns: 1fr; } dl { grid-template-columns: 1fr; } .wide { grid-column: auto; } }
+@media (max-width: 760px) { main { padding-top: 24px; } header { display: block; } .brand { margin-bottom: 20px; } .workspace { grid-template-columns: 1fr; } dl, .all-views { grid-template-columns: 1fr; } .wide { grid-column: auto; } }
 
