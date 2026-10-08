@@ -3,6 +3,7 @@ from math import asin, degrees, sqrt
 
 from .geometry import STEP_WIDTH_CM, RampGeometryError, build_side_profile
 from .geometry_3d import build_ramp_geometry_3d
+from .pricing import calculate_ramp_price
 
 DEFAULT_WIDTH_CM = 40.0
 DEFAULT_SUPPORT_PANEL_WIDTH_CM = 20.0
@@ -33,6 +34,7 @@ class RampConfiguration:
     slat_total_length_cm: float
     has_slats: bool
     product_state: str
+    price: dict
     geometry: dict
     geometry_3d: dict
     color: str
@@ -86,6 +88,7 @@ def calculate_ramp_configuration(
         raise RampGeometryError("Недопустимый цвет покрытия.")
 
     positions = calculate_step_positions(length) if has_slats else []
+    price = calculate_ramp_price(length_cm=length, has_side_rails=bool(side_rails), has_slats=bool(has_slats))
     geometry = build_side_profile(
         height_cm=height,
         ramp_length_cm=length,
@@ -124,6 +127,7 @@ def calculate_ramp_configuration(
         slat_total_length_cm=round(len(positions) * width, 4),
         has_slats=bool(has_slats),
         product_state=product_state,
+        price=price,
         geometry=geometry,
         geometry_3d=geometry_3d,
         color=color,

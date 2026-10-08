@@ -24,6 +24,13 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .state-switch { margin: 0; padding: 12px; border: 1px solid #d4d2ca; border-radius: 10px; display: flex; gap: 16px; }
 .state-switch legend { padding: 0 6px; color: #777a74; font-size: 12px; }
 .state-switch label { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+.price-card { display: grid; gap: 0; padding: 18px; border: 1px solid #ccd7cf; border-radius: 14px; background: #f7faf7; box-shadow: inset 4px 0 #385443; }
+.price-card h2 { margin: 0 0 10px; color: #263c30; }
+.price-card > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #e1e8e3; font-size: 13px; }
+.price-card > div strong { text-align: right; }
+.price-card p { margin: 4px 0 0; color: #747871; font-size: 13px; }
+.price-card .price-total { margin-top: 5px; padding-top: 13px; border: 0; align-items: baseline; color: #263c30; font-weight: 700; }
+.price-card .price-total strong { font-size: 25px; line-height: 1; }
 .link-button { border: 0; background: none; padding: 0; color: #385443; text-align: left; cursor: pointer; text-decoration: underline; }
 .results { min-width: 0; display: grid; gap: 24px; }
 .projection-viewer { display: grid; gap: 12px; }

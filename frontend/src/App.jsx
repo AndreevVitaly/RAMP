@@ -5,9 +5,11 @@ import ImageStudio from './ImageStudio'
 
 const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, support_panel_width_cm: 20, color: 'dark_gray', has_slats: true, side_rails: false, product_state: 'deployed' }
 
-function NumberField({ label, name, value, onChange, hint }) {
-  return <label className="field"><span>{label}</span><div className="number-input"><input type="number" name={name} value={value} min="0" step="1" onChange={onChange} /><em>см</em></div>{hint && <small>{hint}</small>}</label>
+function NumberField({ label, name, value, onChange, hint, min = 0 }) {
+  return <label className="field"><span>{label}</span><div className="number-input"><input type="number" name={name} value={value} min={min} step="1" onChange={onChange} /><em>см</em></div>{hint && <small>{hint}</small>}</label>
 }
+
+const rubles = (value) => new Intl.NumberFormat('ru-RU').format(value) + ' ₽'
 
 export default function App() {
   const [form, setForm] = useState(initialForm)
@@ -19,6 +21,7 @@ export default function App() {
   function update(event) {
     const { name, value, checked, type } = event.target
     const nextValue = type === 'checkbox' ? checked : type === 'number' ? Number(value) : value
+    setLoading(true)
     setForm((current) => {
       const next = { ...current, [name]: nextValue }
       if (name === 'height_cm' && !lengthEdited) next.ramp_length_cm = nextValue * 2
@@ -54,7 +57,7 @@ export default function App() {
       <section className="panel form-panel">
         <h2>Параметры</h2>
         <NumberField label="Высота подъёма" name="height_cm" value={form.height_cm} onChange={update} />
-        <NumberField label="Длина поверхности" name="ramp_length_cm" value={form.ramp_length_cm} onChange={update} hint={`Рекомендация: ${form.height_cm * 2} см`} />
+        <NumberField label="Длина поверхности" name="ramp_length_cm" value={form.ramp_length_cm} onChange={update} min={60} hint={`Рекомендация: ${form.height_cm * 2} см · минимум 60 см`} />
         {lengthEdited && <button className="link-button" type="button" onClick={useRecommendation}>Вернуть рекомендуемую длину</button>}
         <NumberField label="Ширина" name="width_cm" value={form.width_cm} onChange={update} hint="Стандартная ширина — 40 см" />
         <NumberField label="Ширина опорной стойки" name="support_panel_width_cm" value={form.support_panel_width_cm} onChange={update} hint="Стандартная ширина — 20 см" />
@@ -62,6 +65,12 @@ export default function App() {
         <label className="toggle"><input type="checkbox" name="has_slats" checked={form.has_slats} onChange={update} /><span>Добавить поперечные рейки</span></label>
         <label className="toggle"><input type="checkbox" name="side_rails" checked={form.side_rails} onChange={update} /><span>Добавить боковые бортики</span></label>
         <fieldset className="state-switch"><legend>Состояние</legend><label><input type="radio" name="product_state" value="deployed" checked={form.product_state === 'deployed'} onChange={update} /> Разложен</label><label><input type="radio" name="product_state" value="folded" checked={form.product_state === 'folded'} onChange={update} /> Сложен</label></fieldset>
+        <section className="price-card" aria-live="polite"><h2>Стоимость изделия</h2>{!loading && result?.price ? <>
+          <div><span>Пандус {result.price.length_cm} см</span><strong>{rubles(result.price.base_price_rub)}</strong></div>
+          <div><span>Боковые бортики</span><strong>{result.price.side_rails_price_rub ? rubles(result.price.side_rails_price_rub) : 'Не выбраны'}</strong></div>
+          <div><span>Поперечные рейки</span><strong>{result.has_slats ? 'Включены, бесплатно' : 'Не выбраны'}</strong></div>
+          <div className="price-total"><span>Итого</span><strong>{rubles(result.price.total_price_rub)}</strong></div>
+        </> : <p>{loading ? 'Обновляем стоимость…' : 'Укажите допустимые размеры.'}</p>}</section>
       </section>
       <section className="results">
         {loading && <div className="notice">Пересчитываем…</div>}

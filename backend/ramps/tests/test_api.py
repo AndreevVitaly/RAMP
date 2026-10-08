@@ -14,6 +14,7 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.data["slat_total_length_cm"], 280)
         self.assertEqual(response.data["product_state"], "deployed")
         self.assertEqual(response.data["geometry_3d"]["ramp_surface"]["finished_thickness_cm"], 1)
+        self.assertEqual(response.data["price"]["total_price_rub"], 2000)
         self.assertIn("geometry", response.data)
         self.assertEqual(len(response.data["geometry"]["step_points"]), 7)
         self.assertEqual(response.data["geometry"]["support"]["type"], "folding")
@@ -73,4 +74,11 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["product_state"], "folded")
         self.assertFalse(response.data["geometry_3d"]["folding"]["folded_geometry_defined"])
+
+    def test_price_updates_with_length_and_side_panels(self):
+        for length, side_rails, expected in ((60, False, 1600), (100, False, 2000), (100, True, 2500), (150, True, 3000)):
+            with self.subTest(length=length, side_rails=side_rails):
+                response = self.client.post(self.url, {"height_cm": 40, "ramp_length_cm": length, "side_rails": side_rails}, format="json")
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertEqual(response.data["price"]["total_price_rub"], expected)
 
