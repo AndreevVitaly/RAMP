@@ -10,6 +10,8 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["ramp_length_cm"], 100)
         self.assertEqual(response.data["step_count"], 7)
+        self.assertTrue(response.data["has_slats"])
+        self.assertEqual(response.data["slat_total_length_cm"], 280)
         self.assertIn("geometry", response.data)
         self.assertEqual(len(response.data["geometry"]["step_points"]), 7)
         self.assertEqual(response.data["geometry"]["support"]["type"], "folding")
@@ -45,4 +47,22 @@ class RampCalculationApiTests(APITestCase):
             with self.subTest(payload=payload):
                 response = self.client.post(self.url, payload, format="json")
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_all_slat_and_side_panel_combinations_are_independent(self):
+        for has_slats in (True, False):
+            for side_rails in (True, False):
+                with self.subTest(has_slats=has_slats, side_rails=side_rails):
+                    response = self.client.post(
+                        self.url,
+                        {"height_cm": 50, "ramp_length_cm": 100, "width_cm": 40, "has_slats": has_slats, "side_rails": side_rails},
+                        format="json",
+                    )
+                    self.assertEqual(response.status_code, status.HTTP_200_OK)
+                    self.assertEqual(response.data["has_slats"], has_slats)
+                    self.assertEqual(response.data["side_rails"], side_rails)
+                    self.assertEqual(response.data["geometry_3d"]["side_panels"]["enabled"], side_rails)
+                    expected_count = 7 if has_slats else 0
+                    self.assertEqual(response.data["step_count"], expected_count)
+                    self.assertEqual(len(response.data["geometry_3d"]["steps"]), expected_count)
+                    self.assertEqual(response.data["slat_total_length_cm"], expected_count * 40)
 

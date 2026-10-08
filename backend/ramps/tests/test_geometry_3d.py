@@ -28,6 +28,11 @@ class RampGeometry3DTests(SimpleTestCase):
                 self.assertEqual(step["end_right"]["y"] - step["end_left"]["y"], 40)
                 self.assertEqual(step["end_distance_cm"] - step["start_distance_cm"], 3)
 
+    def test_disabled_slats_are_absent_from_unified_3d_model(self):
+        result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, has_slats=False)
+        self.assertEqual(result["geometry_3d"]["steps"], [])
+        self.assertEqual(result["geometry"]["step_points"], [])
+
     def test_custom_width_only_changes_y_extent(self):
         standard = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)["geometry_3d"]
         custom = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=55)["geometry_3d"]

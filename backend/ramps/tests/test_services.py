@@ -24,6 +24,8 @@ class RampCalculationTests(SimpleTestCase):
         self.assertEqual(result["width_cm"], 40)
         self.assertEqual(result["support_panel_width_cm"], 20)
         self.assertEqual(result["support_panel_visual_thickness_cm"], 2)
+        self.assertTrue(result["has_slats"])
+        self.assertEqual(result["slat_total_length_cm"], 280)
         self.assertFalse(result["side_rails"])
 
     def test_accepts_custom_length(self):
@@ -35,6 +37,20 @@ class RampCalculationTests(SimpleTestCase):
 
     def test_step_positions_for_100_cm(self):
         self.assertEqual(calculate_step_positions(100), [5, 19, 33, 47, 61, 75, 89])
+
+    def test_disabling_slats_keeps_other_geometry_and_clears_slat_calculations(self):
+        with_slats = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, has_slats=True)
+        without_slats = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, has_slats=False)
+        self.assertFalse(without_slats["has_slats"])
+        self.assertEqual(without_slats["step_count"], 0)
+        self.assertEqual(without_slats["step_positions_cm"], [])
+        self.assertEqual(without_slats["slat_total_length_cm"], 0)
+        self.assertEqual(without_slats["geometry"]["step_points"], [])
+        self.assertEqual(without_slats["geometry_3d"]["steps"], [])
+        for key in ("height_cm", "ramp_length_cm", "width_cm", "horizontal_run_cm"):
+            self.assertEqual(without_slats[key], with_slats[key])
+        for key in ("base", "support", "hinge_axis", "support_stop"):
+            self.assertEqual(without_slats["geometry_3d"][key], with_slats["geometry_3d"][key])
 
     def test_step_intervals_for_100_cm(self):
         result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)

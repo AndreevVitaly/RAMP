@@ -15,5 +15,6 @@ class RampCalculationSerializer(serializers.Serializer):
     support_panel_width_cm = serializers.FloatField(required=False, default=DEFAULT_SUPPORT_PANEL_WIDTH_CM)
     support_panel_visual_thickness_cm = serializers.FloatField(required=False, default=DEFAULT_SUPPORT_PANEL_VISUAL_THICKNESS_CM)
     color = serializers.ChoiceField(required=False, default=DEFAULT_COLOR, choices=ALLOWED_COLORS)
+    has_slats = serializers.BooleanField(required=False, default=True)
     side_rails = serializers.BooleanField(required=False, default=False)
 

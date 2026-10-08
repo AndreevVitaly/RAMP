@@ -27,6 +27,8 @@ class RampConfiguration:
     step_count: int
     step_width_cm: float
     step_positions_cm: list[float]
+    slat_total_length_cm: float
+    has_slats: bool
     geometry: dict
     geometry_3d: dict
     color: str
@@ -54,6 +56,7 @@ def calculate_ramp_configuration(
     support_panel_width_cm: float = DEFAULT_SUPPORT_PANEL_WIDTH_CM,
     support_panel_visual_thickness_cm: float = DEFAULT_SUPPORT_PANEL_VISUAL_THICKNESS_CM,
     color: str = DEFAULT_COLOR,
+    has_slats: bool = True,
     side_rails: bool = False,
 ) -> dict:
     height = float(height_cm)
@@ -75,7 +78,7 @@ def calculate_ramp_configuration(
     if color not in ALLOWED_COLORS:
         raise RampGeometryError("Недопустимый цвет покрытия.")
 
-    positions = calculate_step_positions(length)
+    positions = calculate_step_positions(length) if has_slats else []
     geometry = build_side_profile(
         height_cm=height,
         ramp_length_cm=length,
@@ -109,6 +112,8 @@ def calculate_ramp_configuration(
         step_count=len(positions),
         step_width_cm=STEP_WIDTH_CM,
         step_positions_cm=positions,
+        slat_total_length_cm=round(len(positions) * width, 4),
+        has_slats=bool(has_slats),
         geometry=geometry,
         geometry_3d=geometry_3d,
         color=color,
