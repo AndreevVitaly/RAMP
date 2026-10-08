@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { calculateRamp } from './api'
 import ProjectionViewer from './ProjectionViewer'
+import ImageStudio from './ImageStudio'
 
 const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, support_panel_width_cm: 20, support_panel_visual_thickness_cm: 2, color: 'dark_gray', has_slats: true, side_rails: false }
 
@@ -90,6 +91,7 @@ export default function App() {
             </> : <div><dt>Боковые панели</dt><dd>Нет</dd></div>}
             {result.has_slats && <div className="wide"><dt>Положения реек</dt><dd>{result.step_positions_cm.join(', ')} см</dd></div>}
           </dl></div>
+          <ImageStudio ramp={result} configuration={form} />
         </>}
       </section>
     </div>

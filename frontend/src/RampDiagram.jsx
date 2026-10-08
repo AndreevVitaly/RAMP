@@ -1,9 +1,4 @@
-const COLORS = {
-  dark_gray: '#4a4f55',
-  light_gray: '#aab0b5',
-  black: '#202226',
-  beige: '#c7ad85',
-}
+import { COLORS } from './materials'
 export default function RampDiagram({ ramp }) {
   const geometry = ramp.geometry
   const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_hinge: D, support_foot: S } = geometry.points

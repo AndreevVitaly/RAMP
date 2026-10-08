@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import RampDiagram from './RampDiagram'
+import { COLORS } from './materials'
 
-const COLORS = { dark_gray: '#4a4f55', light_gray: '#aab0b5', black: '#202226', beige: '#c7ad85' }
 function frame(points, width = 700, height = 410, margin = 55) {
   const xs = points.map((p) => p[0]); const ys = points.map((p) => p[1])
   const minX = Math.min(...xs); const maxX = Math.max(...xs); const minY = Math.min(...ys); const maxY = Math.max(...ys)
@@ -80,10 +80,13 @@ const views = [
   ['side', 'Сбоку'], ['top', 'Сверху'], ['front', 'Спереди'], ['axon', 'Аксонометрия'], ['all', 'Все виды'],
 ]
 
-export default function ProjectionViewer({ ramp }) {
-  const [view, setView] = useState('all')
+export default function ProjectionViewer({ ramp, view: controlledView, onViewChange, displayOptions = {}, containerRef }) {
+  const [internalView, setInternalView] = useState('all')
+  const view = controlledView ?? internalView
+  const setView = (next) => { setInternalView(next); onViewChange?.(next) }
   const content = { side: <RampDiagram ramp={ramp} />, top: <TopView ramp={ramp} />, front: <FrontView ramp={ramp} />, axon: <AxonometricView ramp={ramp} /> }
-  return <section className="projection-viewer">
+  const classes = ['projection-viewer', displayOptions.theme === 'dark' ? 'image-theme-dark' : '', displayOptions.showLabels === false ? 'hide-image-labels' : '', displayOptions.showDimensions === false ? 'hide-image-dimensions' : ''].filter(Boolean).join(' ')
+  return <section ref={containerRef} className={classes} style={{ '--image-background': displayOptions.background || '#ffffff', '--image-scale': `${displayOptions.scale || 100}%` }}>
     <nav className="view-tabs" aria-label="Проекции изделия">{views.map(([id, label]) => <button key={id} className={view === id ? 'active' : ''} onClick={() => setView(id)}>{label}</button>)}</nav>
     {view === 'all' ? <div className="all-views">{Object.values(content)}</div> : content[view]}
   </section>
