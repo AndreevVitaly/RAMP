@@ -76,20 +76,20 @@ def build_ramp_geometry_3d(
         normal_z = cos(angle_rad)
 
         def panel_at(y):
-            top_start = point(0, y, 0)
-            top_end = point(horizontal_run_cm, y, height_cm)
+            bottom_start = point(0, y, 0)
+            bottom_end = point(horizontal_run_cm, y, height_cm)
             return {
-                "top_start": top_start,
-                "top_end": top_end,
-                "bottom_start": point(
-                    -SIDE_PANEL_HEIGHT_CM * normal_x,
+                "bottom_start": bottom_start,
+                "bottom_end": bottom_end,
+                "top_start": point(
+                    SIDE_PANEL_HEIGHT_CM * normal_x,
                     y,
-                    -SIDE_PANEL_HEIGHT_CM * normal_z,
+                    SIDE_PANEL_HEIGHT_CM * normal_z,
                 ),
-                "bottom_end": point(
-                    horizontal_run_cm - SIDE_PANEL_HEIGHT_CM * normal_x,
+                "top_end": point(
+                    horizontal_run_cm + SIDE_PANEL_HEIGHT_CM * normal_x,
                     y,
-                    height_cm - SIDE_PANEL_HEIGHT_CM * normal_z,
+                    height_cm + SIDE_PANEL_HEIGHT_CM * normal_z,
                 ),
             }
 

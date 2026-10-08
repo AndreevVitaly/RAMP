@@ -29,7 +29,9 @@ function TopView({ ramp }) {
 }
 
 function FrontView({ ramp }) {
-  const g = ramp.geometry_3d; const { height_cm: h, width_cm: w } = g.dimensions; const f = frame([[0, 0], [w, h]])
+  const g = ramp.geometry_3d; const { height_cm: h, width_cm: w } = g.dimensions
+  const panelPoints = g.side_panels.enabled ? ['left', 'right'].flatMap((name) => [g.side_panels[name].bottom_end, g.side_panels[name].top_end].map((p) => [p.y, p.z])) : []
+  const f = frame([[0, 0], [w, h], ...panelPoints])
   return <Projection title="Вид спереди · YZ"><svg viewBox="0 0 700 410">
     <rect x={f.x(0)} y={f.y(h)} width={f.x(w) - f.x(0)} height={f.y(0) - f.y(h)} fill={`${COLORS[ramp.color]}18`} stroke={COLORS[ramp.color]} className="projection-surface" />
     <line x1={f.x(0)} y1={f.y(0)} x2={f.x(w)} y2={f.y(0)} className="base-line" />
