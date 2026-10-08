@@ -22,6 +22,8 @@ class RampCalculationTests(SimpleTestCase):
         self.assertTrue(result["uses_recommended_length"])
         self.assertAlmostEqual(result["angle_deg"], 30)
         self.assertEqual(result["width_cm"], 40)
+        self.assertEqual(result["support_panel_width_cm"], 20)
+        self.assertEqual(result["support_panel_visual_thickness_cm"], 2)
         self.assertFalse(result["side_rails"])
 
     def test_accepts_custom_length(self):
@@ -61,6 +63,10 @@ class RampCalculationTests(SimpleTestCase):
         for params in invalid:
             with self.subTest(params=params), self.assertRaises(RampGeometryError):
                 calculate_ramp_configuration(**params)
+
+    def test_rejects_support_panel_wider_than_available_width(self):
+        with self.assertRaisesRegex(RampGeometryError, "доступную внутреннюю ширину"):
+            calculate_ramp_configuration(height_cm=50, width_cm=40, support_panel_width_cm=41)
 
     def test_real_geometry_for_50_by_100(self):
         result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100)

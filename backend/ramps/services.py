@@ -5,6 +5,8 @@ from .geometry import STEP_WIDTH_CM, RampGeometryError, build_side_profile
 from .geometry_3d import build_ramp_geometry_3d
 
 DEFAULT_WIDTH_CM = 40.0
+DEFAULT_SUPPORT_PANEL_WIDTH_CM = 20.0
+DEFAULT_SUPPORT_PANEL_VISUAL_THICKNESS_CM = 2.0
 DEFAULT_COLOR = "dark_gray"
 ALLOWED_COLORS = ("dark_gray", "light_gray", "black", "beige")
 FIRST_STEP_CM = 5.0
@@ -15,6 +17,8 @@ STEP_INTERVAL_CM = 14.0
 class RampConfiguration:
     height_cm: float
     width_cm: float
+    support_panel_width_cm: float
+    support_panel_visual_thickness_cm: float
     ramp_length_cm: float
     recommended_length_cm: float
     uses_recommended_length: bool
@@ -47,17 +51,27 @@ def calculate_ramp_configuration(
     height_cm: float,
     ramp_length_cm: float | None = None,
     width_cm: float = DEFAULT_WIDTH_CM,
+    support_panel_width_cm: float = DEFAULT_SUPPORT_PANEL_WIDTH_CM,
+    support_panel_visual_thickness_cm: float = DEFAULT_SUPPORT_PANEL_VISUAL_THICKNESS_CM,
     color: str = DEFAULT_COLOR,
     side_rails: bool = False,
 ) -> dict:
     height = float(height_cm)
     width = float(width_cm)
+    support_width = float(support_panel_width_cm)
+    support_visual_thickness = float(support_panel_visual_thickness_cm)
     recommended_length = height * 2
     uses_recommended = ramp_length_cm is None
     length = recommended_length if uses_recommended else float(ramp_length_cm)
 
     if width <= 0:
         raise RampGeometryError("Ширина должна быть больше 0 см.")
+    if support_width <= 0:
+        raise RampGeometryError("Ширина опорной стойки должна быть больше 0 см.")
+    if support_width > width:
+        raise RampGeometryError("Ширина опорной стойки не может превышать доступную внутреннюю ширину конструкции.")
+    if support_visual_thickness <= 0:
+        raise RampGeometryError("Условная толщина опорной стойки должна быть больше 0 см.")
     if color not in ALLOWED_COLORS:
         raise RampGeometryError("Недопустимый цвет покрытия.")
 
@@ -78,11 +92,15 @@ def calculate_ramp_configuration(
         step_points=geometry["step_points"],
         support_hinge=geometry["points"]["support_hinge"],
         support_foot=geometry["points"]["support_foot"],
+        support_panel_width_cm=support_width,
+        support_panel_visual_thickness_cm=support_visual_thickness,
         side_rails_enabled=bool(side_rails),
     )
     result = RampConfiguration(
         height_cm=height,
         width_cm=width,
+        support_panel_width_cm=support_width,
+        support_panel_visual_thickness_cm=support_visual_thickness,
         ramp_length_cm=length,
         recommended_length_cm=recommended_length,
         uses_recommended_length=uses_recommended,

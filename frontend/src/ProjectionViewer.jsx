@@ -30,11 +30,13 @@ function TopView({ ramp }) {
 
 function FrontView({ ramp }) {
   const g = ramp.geometry_3d; const { height_cm: h, width_cm: w } = g.dimensions
+  const support = g.support.corners
   const panelPoints = g.side_panels.enabled ? ['left', 'right'].flatMap((name) => [g.side_panels[name].bottom_end, g.side_panels[name].top_end].map((p) => [p.y, p.z])) : []
   const f = frame([[0, 0], [w, h], ...panelPoints])
   return <Projection title="Вид спереди · YZ"><svg viewBox="0 0 700 410">
     <rect x={f.x(0)} y={f.y(h)} width={f.x(w) - f.x(0)} height={f.y(0) - f.y(h)} fill={`${COLORS[ramp.color]}18`} stroke={COLORS[ramp.color]} className="projection-surface" />
     <line x1={f.x(0)} y1={f.y(0)} x2={f.x(w)} y2={f.y(0)} className="base-line" />
+    <polygon points={`${f.x(support.foot_left_back.y)},${f.y(support.foot_left_back.z)} ${f.x(support.foot_right_back.y)},${f.y(support.foot_right_back.z)} ${f.x(support.hinge_right_front.y)},${f.y(support.hinge_right_front.z)} ${f.x(support.hinge_left_front.y)},${f.y(support.hinge_left_front.z)}`} fill={COLORS[ramp.color]} className="front-support-panel" />
     {g.steps.map((s) => <rect key={s.start_distance_cm} x={f.x(0)} y={f.y(s.end_left.z)} width={f.x(w) - f.x(0)} height={f.y(s.start_left.z) - f.y(s.end_left.z)} fill={COLORS[ramp.color]} className="projection-step-band front" />)}
     {g.side_panels.enabled && ['left', 'right'].map((name) => {
       const panel = g.side_panels[name]
@@ -49,19 +51,23 @@ function AxonometricView({ ramp }) {
   const g = ramp.geometry_3d; const surface = g.ramp_surface.corners; const base = g.base.corners
   const project = (p) => [(p.x - p.y) * 0.82, p.z - (p.x + p.y) * 0.34]
   const panelPoints = g.side_panels.enabled ? ['left', 'right'].flatMap((name) => Object.values(g.side_panels[name])) : []
-  const all3d = [...Object.values(surface), ...Object.values(base), ...panelPoints]; const projected = all3d.map(project); const f = frame(projected)
+  const support = g.support.corners
+  const all3d = [...Object.values(surface), ...Object.values(base), ...panelPoints, ...Object.values(support)]; const projected = all3d.map(project); const f = frame(projected)
   const qxy = (p) => { const [u, v] = project(p); return [f.x(u), f.y(v)] }
   const q = (p) => qxy(p).join(',')
   const line = (a, b, cls, key) => <line key={key} x1={f.x(project(a)[0])} y1={f.y(project(a)[1])} x2={f.x(project(b)[0])} y2={f.y(project(b)[1])} className={cls} />
   return <Projection title="Аксонометрия"><svg viewBox="0 0 700 410">
     <polygon points={`${q(base.a_left)} ${q(base.c_left)} ${q(base.c_right)} ${q(base.a_right)}`} className="projection-base axon" />
+    <polygon points={`${q(support.foot_left_back)} ${q(support.hinge_left_back)} ${q(support.hinge_right_back)} ${q(support.foot_right_back)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-back" />
+    <polygon points={`${q(support.foot_left_front)} ${q(support.hinge_left_front)} ${q(support.hinge_right_front)} ${q(support.foot_right_front)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-front" />
+    <polygon points={`${q(support.foot_left_back)} ${q(support.foot_left_front)} ${q(support.hinge_left_front)} ${q(support.hinge_left_back)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-side" />
+    <polygon points={`${q(support.foot_right_back)} ${q(support.foot_right_front)} ${q(support.hinge_right_front)} ${q(support.hinge_right_back)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-side" />
     <polygon points={`${q(surface.a_left)} ${q(surface.b_left)} ${q(surface.b_right)} ${q(surface.a_right)}`} fill={`${COLORS[ramp.color]}44`} stroke={COLORS[ramp.color]} className="projection-surface" />
     {g.steps.map((s) => <polygon key={s.start_distance_cm} points={`${q(s.start_left)} ${q(s.end_left)} ${q(s.end_right)} ${q(s.start_right)}`} fill={COLORS[ramp.color]} className="projection-step-band axon-step" />)}
     {g.side_panels.enabled && ['left', 'right'].map((name) => {
       const panel = g.side_panels[name]
       return <polygon key={name} points={`${q(panel.top_start)} ${q(panel.top_end)} ${q(panel.bottom_end)} ${q(panel.bottom_start)}`} fill={COLORS[ramp.color]} className="axon-side-panel" />
     })}
-    {line(g.support.axis.foot, g.support.axis.hinge, 'support-line', 'support')}
     {line(g.hinge_axis.left, g.hinge_axis.right, 'projection-hinge', 'hinge')}
     {line(g.support_stop.left, g.support_stop.right, 'projection-stop', 'stop')}
     <text x="22" y="385">Одна модель XYZ · стойка показана по центральной оси</text>

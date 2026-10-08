@@ -39,6 +39,35 @@ class RampGeometry3DTests(SimpleTestCase):
         self.assertEqual(custom["steps"][0]["start_right"]["y"], 55)
         self.assertEqual(custom["support"]["center_y_cm"], 27.5)
 
+    def test_support_panel_is_centered_and_twenty_centimeters_wide(self):
+        model = calculate_ramp_configuration(
+            height_cm=50,
+            ramp_length_cm=100,
+            width_cm=40,
+            support_panel_width_cm=20,
+        )["geometry_3d"]
+        support = model["support"]
+        corners = support["corners"]
+        self.assertEqual(support["panel_width_cm"], 20)
+        self.assertEqual(support["center_y_cm"], 20)
+        self.assertEqual((support["y_min_cm"], support["y_max_cm"]), (10, 30))
+        self.assertFalse(support["thickness_defined"])
+        self.assertTrue(support["visual_thickness_only"])
+        for endpoint in ("foot", "hinge"):
+            for face in ("front", "back"):
+                left = corners[f"{endpoint}_left_{face}"]
+                right = corners[f"{endpoint}_right_{face}"]
+                self.assertEqual(right["y"] - left["y"], 20)
+                self.assertEqual((left["x"], left["z"]), (right["x"], right["z"]))
+
+    def test_support_panel_axis_matches_side_profile_points(self):
+        result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)
+        support = result["geometry_3d"]["support"]
+        side_points = result["geometry"]["points"]
+        self.assertEqual(support["axis"]["foot"], {"x": side_points["support_foot"]["x"], "y": 20, "z": side_points["support_foot"]["y"]})
+        self.assertEqual(support["axis"]["hinge"], {"x": side_points["support_hinge"]["x"], "y": 20, "z": side_points["support_hinge"]["y"]})
+        self.assertEqual(support["length_cm"], result["geometry"]["support_length_cm"])
+
     def test_projections_can_share_the_same_b_point(self):
         model = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)["geometry_3d"]
         b = model["ramp_surface"]["corners"]["b_right"]

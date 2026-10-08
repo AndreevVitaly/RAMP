@@ -55,6 +55,8 @@ Vite откроет интерфейс на `http://localhost:5173` и прок�
 {
   "height_cm": 50,
   "width_cm": 40,
+  "support_panel_width_cm": 20,
+  "support_panel_visual_thickness_cm": 2,
   "color": "beige",
   "side_rails": false
 }

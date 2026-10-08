@@ -26,7 +26,7 @@ class RampCalculationApiTests(APITestCase):
         )
 
     def test_calculates_preview_with_custom_values(self):
-        response = self.client.post(self.url, {"height_cm": 50, "ramp_length_cm": 120, "width_cm": 55, "side_rails": True}, format="json")
+        response = self.client.post(self.url, {"height_cm": 50, "ramp_length_cm": 120, "width_cm": 55, "support_panel_width_cm": 20, "support_panel_visual_thickness_cm": 2, "side_rails": True}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["width_cm"], 55)
         self.assertTrue(response.data["side_rails"])
@@ -36,9 +36,12 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.data["geometry_3d"]["side_panels"]["area_each_one_side_cm2"], 600)
         self.assertEqual(response.data["geometry_3d"]["side_panels"]["area_total_one_side_cm2"], 1200)
         self.assertFalse(response.data["geometry_3d"]["side_panels"]["thickness_defined"])
+        self.assertEqual(response.data["geometry_3d"]["support"]["panel_width_cm"], 20)
+        self.assertEqual(response.data["geometry_3d"]["support"]["y_min_cm"], 17.5)
+        self.assertEqual(response.data["geometry_3d"]["support"]["y_max_cm"], 37.5)
 
     def test_rejects_invalid_input(self):
-        for payload in ({"height_cm": 0}, {"height_cm": 50, "ramp_length_cm": -1}, {"height_cm": 50, "ramp_length_cm": 50}, {"height_cm": 50, "ramp_length_cm": 40}, {"height_cm": 50, "color": "red"}):
+        for payload in ({"height_cm": 0}, {"height_cm": 50, "ramp_length_cm": -1}, {"height_cm": 50, "ramp_length_cm": 50}, {"height_cm": 50, "ramp_length_cm": 40}, {"height_cm": 50, "color": "red"}, {"height_cm": 50, "width_cm": 40, "support_panel_width_cm": 41}):
             with self.subTest(payload=payload):
                 response = self.client.post(self.url, payload, format="json")
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

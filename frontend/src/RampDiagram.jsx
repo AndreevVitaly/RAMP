@@ -10,6 +10,7 @@ export default function RampDiagram({ ramp }) {
   const support = geometry.support
   const measurements = geometry.measurements
   const sidePanels = ramp.geometry_3d.side_panels
+  const supportPanel = ramp.geometry_3d.support.corners
   const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
   const usableWidth = canvas.width - canvas.left - canvas.right
   const usableHeight = canvas.height - canvas.top - canvas.bottom
@@ -26,7 +27,7 @@ export default function RampDiagram({ ramp }) {
         <line x1="34" y1={floorY} x2={canvas.width - 34} y2={floorY} className="floor" />
         <line x1={sx(B.x)} y1={sy(B.y)} x2={sx(V.x)} y2={sy(V.y)} className="control-line" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(C.x)} y2={sy(C.y)} className="base-line" />
-        <line x1={sx(S.x)} y1={sy(S.y)} x2={sx(D.x)} y2={sy(D.y)} className="support-line" />
+        <polygon points={`${sx(supportPanel.foot_left_front.x)},${sy(supportPanel.foot_left_front.z)} ${sx(supportPanel.hinge_left_front.x)},${sy(supportPanel.hinge_left_front.z)} ${sx(supportPanel.hinge_left_back.x)},${sy(supportPanel.hinge_left_back.z)} ${sx(supportPanel.foot_left_back.x)},${sy(supportPanel.foot_left_back.z)}`} fill={COLORS[ramp.color]} className="support-panel-profile" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(B.x)} y2={sy(B.y)} stroke={COLORS[ramp.color]} className="ramp-line" />
         {!sidePanels.enabled && geometry.step_points.map((rail) => (
           <line key={rail.start_distance_cm} x1={sx(rail.start.x)} y1={sy(rail.start.y)} x2={sx(rail.end.x)} y2={sy(rail.end.y)} className="side-step-band" />

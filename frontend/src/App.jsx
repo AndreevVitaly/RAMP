@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { calculateRamp } from './api'
 import ProjectionViewer from './ProjectionViewer'
 
-const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, color: 'dark_gray', side_rails: false }
+const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, support_panel_width_cm: 20, support_panel_visual_thickness_cm: 2, color: 'dark_gray', side_rails: false }
 
 function NumberField({ label, name, value, onChange, hint }) {
   return <label className="field"><span>{label}</span><div className="number-input"><input type="number" name={name} value={value} min="0" step="1" onChange={onChange} /><em>см</em></div>{hint && <small>{hint}</small>}</label>
@@ -56,6 +56,8 @@ export default function App() {
         <NumberField label="Длина поверхности" name="ramp_length_cm" value={form.ramp_length_cm} onChange={update} hint={`Рекомендация: ${form.height_cm * 2} см`} />
         {lengthEdited && <button className="link-button" type="button" onClick={useRecommendation}>Вернуть рекомендуемую длину</button>}
         <NumberField label="Ширина" name="width_cm" value={form.width_cm} onChange={update} hint="Стандартная ширина — 40 см" />
+        <NumberField label="Ширина опорной стойки" name="support_panel_width_cm" value={form.support_panel_width_cm} onChange={update} hint="Стандартная ширина — 20 см" />
+        <NumberField label="Условная толщина стойки" name="support_panel_visual_thickness_cm" value={form.support_panel_visual_thickness_cm} onChange={update} hint="Только для визуализации до производственного замера" />
         <label className="field"><span>Цвет покрытия</span><select name="color" value={form.color} onChange={update}><option value="dark_gray">Тёмно-серый</option><option value="light_gray">Светло-серый</option><option value="black">Чёрный</option><option value="beige">Бежевый</option></select></label>
         <label className="toggle"><input type="checkbox" name="side_rails" checked={form.side_rails} onChange={update} /><span>Добавить боковые бортики</span></label>
       </section>
@@ -72,6 +74,7 @@ export default function App() {
             <div><dt>Количество реек</dt><dd>{result.step_count}</dd></div>
             <div><dt>Длина основания</dt><dd>{result.geometry.base_length_cm} см</dd></div>
             <div><dt>Длина стойки</dt><dd>{result.geometry.support_length_cm} см</dd></div>
+            <div><dt>Ширина стойки</dt><dd>{result.geometry_3d.support.panel_width_cm} см</dd></div>
             <div><dt>Угол стойки</dt><dd>{result.geometry.support_base_angle_deg}°</dd></div>
             <div><dt>Положение шарнира</dt><dd>{result.geometry.support.hinge_position_ratio * 100}% / {result.geometry.support.hinge_distance_cm} см</dd></div>
             <div><dt>Зазор от опоры до C</dt><dd>{result.geometry.support_foot_to_base_end_cm} см</dd></div>

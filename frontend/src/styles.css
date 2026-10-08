@@ -37,6 +37,7 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .ramp-line { stroke-width: 12; stroke-linecap: round; }
 .base-line { stroke: #385443; stroke-width: 7; stroke-linecap: round; }
 .support-line { stroke: #7d6047; stroke-width: 7; stroke-linecap: round; }
+.support-panel-profile { stroke: rgba(255, 255, 255, .38); stroke-width: 1.2; filter: brightness(.9); }
 .control-line { stroke: #91a095; stroke-width: 1.5; stroke-dasharray: 7 6; }
 .rail-point { fill: #eadcba; stroke: #6b5839; stroke-width: 2.5; }
 .side-step-band { stroke: #bca77e; stroke-width: 8; stroke-linecap: butt; }
@@ -52,6 +53,11 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .projection-step-band { stroke: rgba(255, 255, 255, .58); stroke-width: 1.5; filter: brightness(1.18); }
 .projection-step-band.front { opacity: .22; filter: none; }
 .front-side-panel { stroke-width: 7; stroke-linecap: butt; }
+.front-support-panel { stroke: rgba(255, 255, 255, .45); stroke-width: 1.5; filter: brightness(.9); }
+.axon-support-panel { stroke: rgba(255, 255, 255, .38); stroke-width: 1.1; }
+.axon-support-panel.support-back { filter: brightness(.72); }
+.axon-support-panel.support-front { filter: brightness(.94); }
+.axon-support-panel.support-side { filter: brightness(.82); }
 .projection-step-band.axon-step { stroke: rgba(255, 255, 255, .65); stroke-width: 1.2; }
 .axon-side-panel { stroke: rgba(255, 255, 255, .45); stroke-width: 1.2; filter: brightness(.9); }
 .top-product-view .product-surface { stroke: #343630; stroke-width: 2; }

@@ -26,6 +26,8 @@ def build_ramp_geometry_3d(
     step_points: list[dict],
     support_hinge: dict,
     support_foot: dict,
+    support_panel_width_cm: float,
+    support_panel_visual_thickness_cm: float,
     side_rails_enabled: bool,
 ) -> dict:
     """Extrude the authoritative X/Z side profile across parameterized Y width."""
@@ -69,6 +71,34 @@ def build_ramp_geometry_3d(
     ]
     hinge_center = point(support_hinge["x"], center_y, support_hinge["y"])
     foot_center = point(support_foot["x"], center_y, support_foot["y"])
+    support_dx = support_hinge["x"] - support_foot["x"]
+    support_dz = support_hinge["y"] - support_foot["y"]
+    support_length = (support_dx**2 + support_dz**2) ** 0.5
+    support_normal_x = -support_dz / support_length
+    support_normal_z = support_dx / support_length
+    half_support_width = support_panel_width_cm / 2
+    half_visual_thickness = support_panel_visual_thickness_cm / 2
+    support_y_min = center_y - half_support_width
+    support_y_max = center_y + half_support_width
+
+    def support_corner(endpoint, y, thickness_side):
+        offset = half_visual_thickness * thickness_side
+        return point(
+            endpoint["x"] + support_normal_x * offset,
+            y,
+            endpoint["y"] + support_normal_z * offset,
+        )
+
+    support_panel_corners = {
+        "foot_left_front": support_corner(support_foot, support_y_min, 1),
+        "foot_right_front": support_corner(support_foot, support_y_max, 1),
+        "hinge_left_front": support_corner(support_hinge, support_y_min, 1),
+        "hinge_right_front": support_corner(support_hinge, support_y_max, 1),
+        "foot_left_back": support_corner(support_foot, support_y_min, -1),
+        "foot_right_back": support_corner(support_foot, support_y_max, -1),
+        "hinge_left_back": support_corner(support_hinge, support_y_min, -1),
+        "hinge_right_back": support_corner(support_hinge, support_y_max, -1),
+    }
     side_panels = {"enabled": False, "count": 0}
     if side_rails_enabled:
         angle_rad = radians(angle_deg)
@@ -127,7 +157,15 @@ def build_ramp_geometry_3d(
         "support": {
             "axis": {"hinge": hinge_center, "foot": foot_center},
             "center_y_cm": round(center_y, 4),
-            "cross_section_defined": False,
+            "length_cm": round(support_length, 4),
+            "panel_width_cm": round(support_panel_width_cm, 4),
+            "available_inner_width_cm": round(width_cm, 4),
+            "y_min_cm": round(support_y_min, 4),
+            "y_max_cm": round(support_y_max, 4),
+            "visual_thickness_cm": round(support_panel_visual_thickness_cm, 4),
+            "thickness_defined": False,
+            "visual_thickness_only": True,
+            "corners": support_panel_corners,
         },
         "hinge_axis": {
             "center": hinge_center,
