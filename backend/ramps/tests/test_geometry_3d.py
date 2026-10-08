@@ -46,20 +46,22 @@ class RampGeometry3DTests(SimpleTestCase):
         self.assertEqual((b["x"], b["y"]), (86.6025, 40))  # top XY
         self.assertEqual((b["y"], b["z"]), (40, 50))  # front YZ
 
-    def test_enabled_side_panels_have_known_length_only(self):
+    def test_enabled_side_panels_have_real_height_and_area(self):
         result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, side_rails=True)
         panels = result["geometry_3d"]["side_panels"]
         self.assertTrue(panels["enabled"])
         self.assertEqual(panels["count"], 2)
         self.assertEqual(panels["length_cm"], 100)
-        self.assertFalse(panels["depth_defined"])
+        self.assertEqual(panels["height_cm"], 5)
+        self.assertEqual(panels["area_each_one_side_cm2"], 500)
+        self.assertEqual(panels["area_total_one_side_cm2"], 1000)
         self.assertFalse(panels["thickness_defined"])
-        self.assertFalse(panels["area_defined"])
-        self.assertNotIn("height_cm", panels)
         for name in ("left", "right"):
             panel = panels[name]
             panel_length = dist(panel["top_start"].values(), panel["top_end"].values())
             self.assertAlmostEqual(panel_length, 100, places=4)
+            self.assertAlmostEqual(dist(panel["top_start"].values(), panel["bottom_start"].values()), 5, places=4)
+            self.assertAlmostEqual(dist(panel["top_end"].values(), panel["bottom_end"].values()), 5, places=4)
         self.assertEqual(panels["left"]["top_start"]["y"], 0)
         self.assertEqual(panels["right"]["top_start"]["y"], 40)
         self.assertEqual(result["geometry_3d"]["side_rails"], panels)
@@ -71,10 +73,20 @@ class RampGeometry3DTests(SimpleTestCase):
         self.assertEqual(panels, {"enabled": False, "count": 0})
         self.assertEqual(result["geometry_3d"]["side_rails"], panels)
 
-    def test_side_rails_follow_length_and_width(self):
-        for height, length, width in ((50, 100, 40), (60, 120, 40), (70, 140, 40), (50, 100, 55)):
+    def test_side_panels_follow_length_width_and_surface_normal(self):
+        for height, length, width in ((50, 80, 40), (50, 100, 40), (50, 120, 40), (50, 140, 40), (50, 100, 55)):
             with self.subTest(height=height, length=length, width=width):
                 panels = calculate_ramp_configuration(height_cm=height, ramp_length_cm=length, width_cm=width, side_rails=True)["geometry_3d"]["side_panels"]
                 self.assertEqual(panels["length_cm"], length)
+                self.assertEqual(panels["height_cm"], 5)
+                self.assertEqual(panels["area_each_one_side_cm2"], length * 5)
+                self.assertEqual(panels["area_total_one_side_cm2"], length * 10)
                 self.assertEqual(panels["left"]["top_start"]["y"], 0)
                 self.assertEqual(panels["right"]["top_start"]["y"], width)
+                for name in ("left", "right"):
+                    panel = panels[name]
+                    along = tuple(panel["top_end"][axis] - panel["top_start"][axis] for axis in ("x", "y", "z"))
+                    down = tuple(panel["bottom_start"][axis] - panel["top_start"][axis] for axis in ("x", "y", "z"))
+                    relative_dot = abs(sum(a * b for a, b in zip(along, down))) / (length * 5)
+                    self.assertLess(relative_dot, 0.0002)
+                    self.assertAlmostEqual(dist(panel["top_start"].values(), panel["bottom_start"].values()), 5, places=4)

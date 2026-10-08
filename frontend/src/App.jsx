@@ -80,6 +80,8 @@ export default function App() {
             {result.geometry_3d.side_panels.enabled ? <>
               <div><dt>Боковые панели</dt><dd>2 шт.</dd></div>
               <div><dt>Длина каждой</dt><dd>{result.geometry_3d.side_panels.length_cm} см</dd></div>
+              <div><dt>Высота каждой</dt><dd>{result.geometry_3d.side_panels.height_cm} см</dd></div>
+              <div><dt>Площадь двух панелей с одной стороны</dt><dd>{result.geometry_3d.side_panels.area_total_one_side_cm2} см²</dd></div>
             </> : <div><dt>Боковые панели</dt><dd>Нет</dd></div>}
             <div className="wide"><dt>Положения реек</dt><dd>{result.step_positions_cm.join(', ')} см</dd></div>
           </dl></div>

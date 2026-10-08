@@ -32,7 +32,10 @@ class RampCalculationApiTests(APITestCase):
         self.assertTrue(response.data["side_rails"])
         self.assertTrue(response.data["geometry_3d"]["side_panels"]["enabled"])
         self.assertEqual(response.data["geometry_3d"]["side_panels"]["count"], 2)
-        self.assertFalse(response.data["geometry_3d"]["side_panels"]["depth_defined"])
+        self.assertEqual(response.data["geometry_3d"]["side_panels"]["height_cm"], 5)
+        self.assertEqual(response.data["geometry_3d"]["side_panels"]["area_each_one_side_cm2"], 600)
+        self.assertEqual(response.data["geometry_3d"]["side_panels"]["area_total_one_side_cm2"], 1200)
+        self.assertFalse(response.data["geometry_3d"]["side_panels"]["thickness_defined"])
 
     def test_rejects_invalid_input(self):
         for payload in ({"height_cm": 0}, {"height_cm": 50, "ramp_length_cm": -1}, {"height_cm": 50, "ramp_length_cm": 50}, {"height_cm": 50, "ramp_length_cm": 40}, {"height_cm": 50, "color": "red"}):

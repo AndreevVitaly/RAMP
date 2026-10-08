@@ -4,8 +4,6 @@ const COLORS = {
   black: '#202226',
   beige: '#c7ad85',
 }
-const VISUAL_SIDE_PANEL_DEPTH_PX = 12
-
 export default function RampDiagram({ ramp }) {
   const geometry = ramp.geometry
   const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_hinge: D, support_foot: S } = geometry.points
@@ -33,7 +31,7 @@ export default function RampDiagram({ ramp }) {
         {!sidePanels.enabled && geometry.step_points.map((rail) => (
           <line key={rail.start_distance_cm} x1={sx(rail.start.x)} y1={sy(rail.start.y)} x2={sx(rail.end.x)} y2={sy(rail.end.y)} className="side-step-band" />
         ))}
-        {sidePanels.enabled && <polygon points={`${sx(A.x)},${sy(A.y)} ${sx(B.x)},${sy(B.y)} ${sx(B.x)},${sy(B.y) + VISUAL_SIDE_PANEL_DEPTH_PX} ${sx(A.x)},${sy(A.y) + VISUAL_SIDE_PANEL_DEPTH_PX}`} fill={COLORS[ramp.color]} className="side-panel-profile" />}
+        {sidePanels.enabled && <polygon points={`${sx(sidePanels.left.top_start.x)},${sy(sidePanels.left.top_start.z)} ${sx(sidePanels.left.top_end.x)},${sy(sidePanels.left.top_end.z)} ${sx(sidePanels.left.bottom_end.x)},${sy(sidePanels.left.bottom_end.z)} ${sx(sidePanels.left.bottom_start.x)},${sy(sidePanels.left.bottom_start.z)}`} fill={COLORS[ramp.color]} className="side-panel-profile" />}
 
         <rect x={sx(S.x) - 18} y={floorY - 12} width="18" height="12" rx="1.5" className="support-stop" />
         <circle cx={sx(D.x)} cy={sy(D.y)} r="9" className="hinge-outer" />

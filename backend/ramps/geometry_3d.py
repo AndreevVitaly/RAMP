@@ -1,4 +1,8 @@
 from dataclasses import asdict, dataclass
+from math import cos, radians, sin
+
+
+SIDE_PANEL_HEIGHT_CM = 5.0
 
 
 @dataclass(frozen=True)
@@ -67,20 +71,38 @@ def build_ramp_geometry_3d(
     foot_center = point(support_foot["x"], center_y, support_foot["y"])
     side_panels = {"enabled": False, "count": 0}
     if side_rails_enabled:
+        angle_rad = radians(angle_deg)
+        normal_x = -sin(angle_rad)
+        normal_z = cos(angle_rad)
+
         def panel_at(y):
+            top_start = point(0, y, 0)
+            top_end = point(horizontal_run_cm, y, height_cm)
             return {
-                "top_start": point(0, y, 0),
-                "top_end": point(horizontal_run_cm, y, height_cm),
+                "top_start": top_start,
+                "top_end": top_end,
+                "bottom_start": point(
+                    -SIDE_PANEL_HEIGHT_CM * normal_x,
+                    y,
+                    -SIDE_PANEL_HEIGHT_CM * normal_z,
+                ),
+                "bottom_end": point(
+                    horizontal_run_cm - SIDE_PANEL_HEIGHT_CM * normal_x,
+                    y,
+                    height_cm - SIDE_PANEL_HEIGHT_CM * normal_z,
+                ),
             }
 
+        area_each = ramp_length_cm * SIDE_PANEL_HEIGHT_CM
         side_panels = {
             "enabled": True,
             "count": 2,
             "length_cm": round(ramp_length_cm, 4),
-            "depth_cm": None,
-            "depth_defined": False,
-            "area_defined": False,
+            "height_cm": SIDE_PANEL_HEIGHT_CM,
+            "area_each_one_side_cm2": round(area_each, 4),
+            "area_total_one_side_cm2": round(area_each * 2, 4),
             "thickness_defined": False,
+            "surface_normal": {"x": round(normal_x, 6), "y": 0, "z": round(normal_z, 6)},
             "left": panel_at(0),
             "right": panel_at(width_cm),
         }

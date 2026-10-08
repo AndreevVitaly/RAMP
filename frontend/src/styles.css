@@ -51,6 +51,7 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .projection-step { stroke: #b89255; stroke-width: 4; }
 .projection-step-band { stroke: rgba(255, 255, 255, .58); stroke-width: 1.5; filter: brightness(1.18); }
 .projection-step-band.front { opacity: .22; filter: none; }
+.front-side-panel { stroke-width: 7; stroke-linecap: butt; }
 .projection-step-band.axon-step { stroke: rgba(255, 255, 255, .65); stroke-width: 1.2; }
 .axon-side-panel { stroke: rgba(255, 255, 255, .45); stroke-width: 1.2; filter: brightness(.9); }
 .top-product-view .product-surface { stroke: #343630; stroke-width: 2; }
