@@ -3,7 +3,7 @@ import { calculateRamp } from './api'
 import ProjectionViewer from './ProjectionViewer'
 import ImageStudio from './ImageStudio'
 
-const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, support_panel_width_cm: 20, support_panel_visual_thickness_cm: 2, color: 'dark_gray', has_slats: true, side_rails: false }
+const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, support_panel_width_cm: 20, color: 'dark_gray', has_slats: true, side_rails: false, product_state: 'deployed' }
 
 function NumberField({ label, name, value, onChange, hint }) {
   return <label className="field"><span>{label}</span><div className="number-input"><input type="number" name={name} value={value} min="0" step="1" onChange={onChange} /><em>см</em></div>{hint && <small>{hint}</small>}</label>
@@ -58,10 +58,10 @@ export default function App() {
         {lengthEdited && <button className="link-button" type="button" onClick={useRecommendation}>Вернуть рекомендуемую длину</button>}
         <NumberField label="Ширина" name="width_cm" value={form.width_cm} onChange={update} hint="Стандартная ширина — 40 см" />
         <NumberField label="Ширина опорной стойки" name="support_panel_width_cm" value={form.support_panel_width_cm} onChange={update} hint="Стандартная ширина — 20 см" />
-        <NumberField label="Условная толщина стойки" name="support_panel_visual_thickness_cm" value={form.support_panel_visual_thickness_cm} onChange={update} hint="Только для визуализации до производственного замера" />
         <label className="field"><span>Цвет покрытия</span><select name="color" value={form.color} onChange={update}><option value="dark_gray">Тёмно-серый</option><option value="light_gray">Светло-серый</option><option value="black">Чёрный</option><option value="beige">Бежевый</option></select></label>
         <label className="toggle"><input type="checkbox" name="has_slats" checked={form.has_slats} onChange={update} /><span>Добавить поперечные рейки</span></label>
         <label className="toggle"><input type="checkbox" name="side_rails" checked={form.side_rails} onChange={update} /><span>Добавить боковые бортики</span></label>
+        <fieldset className="state-switch"><legend>Состояние</legend><label><input type="radio" name="product_state" value="deployed" checked={form.product_state === 'deployed'} onChange={update} /> Разложен</label><label><input type="radio" name="product_state" value="folded" checked={form.product_state === 'folded'} onChange={update} /> Сложен</label></fieldset>
       </section>
       <section className="results">
         {loading && <div className="notice">Пересчитываем…</div>}

@@ -84,6 +84,7 @@ export default function ProjectionViewer({ ramp, view: controlledView, onViewCha
   const [internalView, setInternalView] = useState('all')
   const view = controlledView ?? internalView
   const setView = (next) => { setInternalView(next); onViewChange?.(next) }
+  if (ramp.product_state === 'folded') return <section ref={containerRef} className="projection-viewer"><div className="folded-preview"><strong>Сложенное состояние — предварительно</strong><p>Точная геометрия складывания и оси петель ещё не подтверждены. Технический чертёж не строится, чтобы не выдавать предварительную схему за производственный размер.</p></div></section>
   const content = { side: <RampDiagram ramp={ramp} />, top: <TopView ramp={ramp} />, front: <FrontView ramp={ramp} />, axon: <AxonometricView ramp={ramp} /> }
   const classes = ['projection-viewer', displayOptions.theme === 'dark' ? 'image-theme-dark' : '', displayOptions.showLabels === false ? 'hide-image-labels' : '', displayOptions.showDimensions === false ? 'hide-image-dimensions' : ''].filter(Boolean).join(' ')
   return <section ref={containerRef} className={classes} style={{ '--image-background': displayOptions.background || '#ffffff', '--image-scale': `${displayOptions.scale || 100}%` }}>

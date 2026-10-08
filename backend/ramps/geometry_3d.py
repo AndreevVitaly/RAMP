@@ -28,6 +28,8 @@ def build_ramp_geometry_3d(
     support_foot: dict,
     support_panel_width_cm: float,
     support_panel_visual_thickness_cm: float,
+    finished_panel_thickness_cm: float,
+    product_state: str,
     side_rails_enabled: bool,
 ) -> dict:
     """Extrude the authoritative X/Z side profile across parameterized Y width."""
@@ -47,6 +49,24 @@ def build_ramp_geometry_3d(
             "b_right": point(horizontal_run_cm, width_cm, height_cm),
         },
     }
+    angle_rad = radians(angle_deg)
+    surface_normal_x = -sin(angle_rad)
+    surface_normal_z = cos(angle_rad)
+
+    def below_surface(p):
+        return point(
+            p["x"] - finished_panel_thickness_cm * surface_normal_x,
+            p["y"],
+            p["z"] - finished_panel_thickness_cm * surface_normal_z,
+        )
+
+    ramp_surface["finished_thickness_cm"] = round(finished_panel_thickness_cm, 4)
+    ramp_surface["plywood_thickness_cm"] = 0.8
+    ramp_surface["carpet_thickness_cm"] = 0.2
+    ramp_surface["volume_corners"] = {
+        **{f"top_{name}": value for name, value in ramp_surface["corners"].items()},
+        **{f"bottom_{name}": below_surface(value) for name, value in ramp_surface["corners"].items()},
+    }
     base = {
         "length_cm": round(base_length_cm, 4),
         "width_cm": round(width_cm, 4),
@@ -56,6 +76,11 @@ def build_ramp_geometry_3d(
             "c_left": point(base_length_cm, 0, 0),
             "c_right": point(base_length_cm, width_cm, 0),
         },
+    }
+    base["finished_thickness_cm"] = round(finished_panel_thickness_cm, 4)
+    base["volume_corners"] = {
+        **{f"top_{name}": value for name, value in base["corners"].items()},
+        **{f"bottom_{name}": point(value["x"], value["y"], value["z"] - finished_panel_thickness_cm) for name, value in base["corners"].items()},
     }
     steps = [
         {
@@ -162,9 +187,12 @@ def build_ramp_geometry_3d(
             "available_inner_width_cm": round(width_cm, 4),
             "y_min_cm": round(support_y_min, 4),
             "y_max_cm": round(support_y_max, 4),
+            "thickness_cm": round(support_panel_visual_thickness_cm, 4),
             "visual_thickness_cm": round(support_panel_visual_thickness_cm, 4),
-            "thickness_defined": False,
-            "visual_thickness_only": True,
+            "plywood_thickness_cm": 0.8,
+            "carpet_thickness_cm": 0.2,
+            "thickness_defined": True,
+            "visual_thickness_only": False,
             "corners": support_panel_corners,
         },
         "hinge_axis": {
@@ -182,6 +210,7 @@ def build_ramp_geometry_3d(
             "display_note": "Схематично — размеры не определены",
         },
         "side_panels": side_panels,
+        "folding": {"state": product_state, "folded_geometry_defined": False},
         # Temporary alias for clients created before the terminology correction.
         "side_rails": side_panels,
     }

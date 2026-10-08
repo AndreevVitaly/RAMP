@@ -6,7 +6,10 @@ from .geometry_3d import build_ramp_geometry_3d
 
 DEFAULT_WIDTH_CM = 40.0
 DEFAULT_SUPPORT_PANEL_WIDTH_CM = 20.0
-DEFAULT_SUPPORT_PANEL_VISUAL_THICKNESS_CM = 2.0
+PLYWOOD_THICKNESS_CM = 0.8
+CARPET_THICKNESS_CM = 0.2
+FINISHED_PANEL_THICKNESS_CM = PLYWOOD_THICKNESS_CM + CARPET_THICKNESS_CM
+DEFAULT_SUPPORT_PANEL_VISUAL_THICKNESS_CM = FINISHED_PANEL_THICKNESS_CM
 DEFAULT_COLOR = "dark_gray"
 ALLOWED_COLORS = ("dark_gray", "light_gray", "black", "beige")
 FIRST_STEP_CM = 5.0
@@ -29,6 +32,7 @@ class RampConfiguration:
     step_positions_cm: list[float]
     slat_total_length_cm: float
     has_slats: bool
+    product_state: str
     geometry: dict
     geometry_3d: dict
     color: str
@@ -57,6 +61,7 @@ def calculate_ramp_configuration(
     support_panel_visual_thickness_cm: float = DEFAULT_SUPPORT_PANEL_VISUAL_THICKNESS_CM,
     color: str = DEFAULT_COLOR,
     has_slats: bool = True,
+    product_state: str = "deployed",
     side_rails: bool = False,
 ) -> dict:
     height = float(height_cm)
@@ -75,6 +80,8 @@ def calculate_ramp_configuration(
         raise RampGeometryError("Ширина опорной стойки не может превышать доступную внутреннюю ширину конструкции.")
     if support_visual_thickness <= 0:
         raise RampGeometryError("Условная толщина опорной стойки должна быть больше 0 см.")
+    if product_state not in ("deployed", "folded"):
+        raise RampGeometryError("Недопустимое состояние изделия.")
     if color not in ALLOWED_COLORS:
         raise RampGeometryError("Недопустимый цвет покрытия.")
 
@@ -97,6 +104,8 @@ def calculate_ramp_configuration(
         support_foot=geometry["points"]["support_foot"],
         support_panel_width_cm=support_width,
         support_panel_visual_thickness_cm=support_visual_thickness,
+        finished_panel_thickness_cm=FINISHED_PANEL_THICKNESS_CM,
+        product_state=product_state,
         side_rails_enabled=bool(side_rails),
     )
     result = RampConfiguration(
@@ -114,6 +123,7 @@ def calculate_ramp_configuration(
         step_positions_cm=positions,
         slat_total_length_cm=round(len(positions) * width, 4),
         has_slats=bool(has_slats),
+        product_state=product_state,
         geometry=geometry,
         geometry_3d=geometry_3d,
         color=color,

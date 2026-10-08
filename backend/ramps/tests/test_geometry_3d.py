@@ -56,8 +56,9 @@ class RampGeometry3DTests(SimpleTestCase):
         self.assertEqual(support["panel_width_cm"], 20)
         self.assertEqual(support["center_y_cm"], 20)
         self.assertEqual((support["y_min_cm"], support["y_max_cm"]), (10, 30))
-        self.assertFalse(support["thickness_defined"])
-        self.assertTrue(support["visual_thickness_only"])
+        self.assertEqual(support["thickness_cm"], 1)
+        self.assertTrue(support["thickness_defined"])
+        self.assertFalse(support["visual_thickness_only"])
         for endpoint in ("foot", "hinge"):
             for face in ("front", "back"):
                 left = corners[f"{endpoint}_left_{face}"]
@@ -79,6 +80,20 @@ class RampGeometry3DTests(SimpleTestCase):
         self.assertEqual((b["x"], b["z"]), (86.6025, 50))  # side XZ
         self.assertEqual((b["x"], b["y"]), (86.6025, 40))  # top XY
         self.assertEqual((b["y"], b["z"]), (40, 50))  # front YZ
+
+    def test_finished_panel_volumes_use_eight_mm_plywood_and_two_mm_carpet(self):
+        model = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)["geometry_3d"]
+        self.assertEqual(model["ramp_surface"]["finished_thickness_cm"], 1)
+        self.assertEqual(model["ramp_surface"]["plywood_thickness_cm"], 0.8)
+        self.assertEqual(model["ramp_surface"]["carpet_thickness_cm"], 0.2)
+        self.assertEqual(len(model["ramp_surface"]["volume_corners"]), 8)
+        self.assertEqual(model["base"]["finished_thickness_cm"], 1)
+        self.assertEqual(len(model["base"]["volume_corners"]), 8)
+
+    def test_folded_state_is_recorded_without_invented_geometry(self):
+        result = calculate_ramp_configuration(height_cm=50, product_state="folded")
+        self.assertEqual(result["product_state"], "folded")
+        self.assertEqual(result["geometry_3d"]["folding"], {"state": "folded", "folded_geometry_defined": False})
 
     def test_enabled_side_panels_have_real_height_and_area(self):
         result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, side_rails=True)

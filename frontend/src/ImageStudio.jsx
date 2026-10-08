@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import ImageGallery from './ImageGallery'
 import ProjectionViewer from './ProjectionViewer'
+import RealisticViewer from './RealisticViewer'
 import { buildExportSvg, svgToPngBlob } from './imageExport'
 
 const TABS = [['photos', 'Фотографии'], ['illustrations', 'Иллюстрации'], ['builder', 'Конструктор рисунков']]
@@ -13,7 +14,8 @@ function download(blob, name) {
 export default function ImageStudio({ ramp, configuration }) {
   const [tab, setTab] = useState('builder')
   const [view, setView] = useState('axon')
-  const [options, setOptions] = useState({ background: '#f4f1e8', showDimensions: true, showLabels: true, scale: 100, theme: 'light', aspect: '4:3' })
+  const [renderMode, setRenderMode] = useState('realistic')
+  const [options, setOptions] = useState({ background: '#f4f1e8', showBackground: true, showDimensions: true, showLabels: true, scale: 100, theme: 'light', aspect: '4:3' })
   const canvasRef = useRef(null)
 
   function exportSvg() {
@@ -32,17 +34,19 @@ export default function ImageStudio({ ramp, configuration }) {
     {tab === 'photos' && <ImageGallery kind="photo" configuration={configuration} />}
     {tab === 'illustrations' && <ImageGallery kind="illustration" configuration={configuration} />}
     {tab === 'builder' && <div className="image-builder">
+      <nav className="render-mode-tabs"><button type="button" className={renderMode === 'blueprint' ? 'active' : ''} onClick={() => setRenderMode('blueprint')}>Чертёж</button><button type="button" className={renderMode === 'realistic' ? 'active' : ''} onClick={() => setRenderMode('realistic')}>Реалистичный</button><button type="button" className={renderMode === 'photo' ? 'active' : ''} onClick={() => setRenderMode('photo')}>Фото</button></nav>
       <div className="image-editor">
         <label>Фон <input type="color" value={options.background} onChange={(event) => setOptions({ ...options, background: event.target.value })} /></label>
+        <label><input type="checkbox" checked={options.showBackground} onChange={(event) => setOptions({ ...options, showBackground: event.target.checked })} /> Показывать фон</label>
         <label>Масштаб <input type="range" min="70" max="130" value={options.scale} onChange={(event) => setOptions({ ...options, scale: Number(event.target.value) })} /><span>{options.scale}%</span></label>
         <label><input type="checkbox" checked={options.showDimensions} onChange={(event) => setOptions({ ...options, showDimensions: event.target.checked })} /> Размеры</label>
         <label><input type="checkbox" checked={options.showLabels} onChange={(event) => setOptions({ ...options, showLabels: event.target.checked })} /> Подписи</label>
         <label>Формат <select value={options.aspect} onChange={(event) => setOptions({ ...options, aspect: event.target.value })}><option>1:1</option><option>4:3</option></select></label>
         <label>Оформление <select value={options.theme} onChange={(event) => setOptions({ ...options, theme: event.target.value })}><option value="light">Светлое</option><option value="dark">Тёмное</option></select></label>
-        <button type="button" onClick={exportSvg}>Экспорт SVG</button><button type="button" onClick={exportPng}>Экспорт PNG</button>
+        <button type="button" onClick={exportSvg} disabled={renderMode !== 'blueprint'} title="SVG предназначен для технических видов">Экспорт SVG</button><button type="button" onClick={exportPng} disabled={renderMode === 'photo'}>Экспорт PNG</button>
       </div>
-      <div className={`export-canvas aspect-${options.aspect.replace(':', '-')}`}><ProjectionViewer ramp={ramp} view={view} onViewChange={setView} displayOptions={options} containerRef={canvasRef} /></div>
-      <p className="folded-note">Сложенный вид будет добавлен после подтверждения геометрии складывания и положения стойки.</p>
+      {renderMode === 'photo' ? <><p className="photo-accuracy-note">Фотографии показывают изготовленные изделия и не считаются точным изображением текущих размеров, если их конфигурация отличается.</p><ImageGallery kind="photo" configuration={configuration} /></> : <div className={`export-canvas aspect-${options.aspect.replace(':', '-')} ${options.showBackground ? '' : 'transparent-background'}`} style={{ background: options.showBackground ? options.background : 'transparent' }}>{renderMode === 'blueprint' ? <ProjectionViewer ramp={ramp} view={view} onViewChange={setView} displayOptions={{ ...options, background: options.showBackground ? options.background : 'transparent' }} containerRef={canvasRef} /> : <RealisticViewer ramp={ramp} view={view === 'all' ? 'axon' : view} onViewChange={setView} displayOptions={options} containerRef={canvasRef} />}</div>}
+      <p className="folded-note">Переключатель «Разложен / Сложен» сохраняется в общей конфигурации. Неподтверждённая кинематика сложенного состояния не подменяется вымышленной моделью.</p>
     </div>}
   </section>
 }

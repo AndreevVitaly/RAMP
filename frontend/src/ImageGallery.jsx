@@ -25,7 +25,7 @@ export default function ImageGallery({ kind, configuration }) {
 
   const configSnapshot = useMemo(() => ({
     height_cm: configuration.height_cm, ramp_length_cm: configuration.ramp_length_cm,
-    width_cm: configuration.width_cm, support_panel_width_cm: configuration.support_panel_width_cm,
+    width_cm: configuration.width_cm, support_panel_width_cm: configuration.support_panel_width_cm, product_state: configuration.product_state,
   }), [configuration])
 
   async function submit(event) {
@@ -60,7 +60,7 @@ export default function ImageGallery({ kind, configuration }) {
       {items.length === 0 && <p>Изображений пока нет.</p>}
       {items.map((item) => <article key={item.id} className={`gallery-item ${item.is_primary ? 'primary' : ''}`}>
         <img src={item.file} alt={item.title || item.caption || 'Изображение пандуса'} />
-        <div><strong>{item.title || item.caption || item.original_name}</strong>{item.is_illustration && <span className="illustration-badge">Иллюстрация</span>}<small>{MATERIALS[item.color]?.label || 'Цвет не указан'} · {item.has_slats ? 'с рейками' : 'без реек'} · {item.side_rails ? 'с бортиками' : 'без бортиков'}</small></div>
+        <div><strong>{item.title || item.caption || item.original_name}</strong>{item.is_illustration && <span className="illustration-badge">Иллюстрация</span>}<small>{MATERIALS[item.color]?.label || 'Цвет не указан'} · {item.has_slats ? 'с рейками' : 'без реек'} · {item.side_rails ? 'с бортиками' : 'без бортиков'}</small><small>{item.configuration?.height_cm ? `${item.configuration.height_cm} × ${item.configuration.ramp_length_cm} × ${item.configuration.width_cm} см` : 'Точные размеры не привязаны'}</small></div>
         <div className="gallery-actions"><button type="button" onClick={() => makePrimary(item.id)} disabled={item.is_primary}>{item.is_primary ? 'Главное' : 'Сделать главным'}</button><button type="button" onClick={() => remove(item.id)}>Удалить</button></div>
       </article>)}
     </div>

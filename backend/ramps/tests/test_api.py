@@ -12,6 +12,8 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.data["step_count"], 7)
         self.assertTrue(response.data["has_slats"])
         self.assertEqual(response.data["slat_total_length_cm"], 280)
+        self.assertEqual(response.data["product_state"], "deployed")
+        self.assertEqual(response.data["geometry_3d"]["ramp_surface"]["finished_thickness_cm"], 1)
         self.assertIn("geometry", response.data)
         self.assertEqual(len(response.data["geometry"]["step_points"]), 7)
         self.assertEqual(response.data["geometry"]["support"]["type"], "folding")
@@ -28,7 +30,7 @@ class RampCalculationApiTests(APITestCase):
         )
 
     def test_calculates_preview_with_custom_values(self):
-        response = self.client.post(self.url, {"height_cm": 50, "ramp_length_cm": 120, "width_cm": 55, "support_panel_width_cm": 20, "support_panel_visual_thickness_cm": 2, "side_rails": True}, format="json")
+        response = self.client.post(self.url, {"height_cm": 50, "ramp_length_cm": 120, "width_cm": 55, "support_panel_width_cm": 20, "side_rails": True}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["width_cm"], 55)
         self.assertTrue(response.data["side_rails"])
@@ -43,7 +45,7 @@ class RampCalculationApiTests(APITestCase):
         self.assertEqual(response.data["geometry_3d"]["support"]["y_max_cm"], 37.5)
 
     def test_rejects_invalid_input(self):
-        for payload in ({"height_cm": 0}, {"height_cm": 50, "ramp_length_cm": -1}, {"height_cm": 50, "ramp_length_cm": 50}, {"height_cm": 50, "ramp_length_cm": 40}, {"height_cm": 50, "color": "red"}, {"height_cm": 50, "width_cm": 40, "support_panel_width_cm": 41}):
+        for payload in ({"height_cm": 0}, {"height_cm": 50, "ramp_length_cm": -1}, {"height_cm": 50, "ramp_length_cm": 50}, {"height_cm": 50, "ramp_length_cm": 40}, {"height_cm": 50, "color": "red"}, {"height_cm": 50, "width_cm": 40, "support_panel_width_cm": 41}, {"height_cm": 50, "product_state": "broken"}):
             with self.subTest(payload=payload):
                 response = self.client.post(self.url, payload, format="json")
                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -65,4 +67,10 @@ class RampCalculationApiTests(APITestCase):
                     self.assertEqual(response.data["step_count"], expected_count)
                     self.assertEqual(len(response.data["geometry_3d"]["steps"]), expected_count)
                     self.assertEqual(response.data["slat_total_length_cm"], expected_count * 40)
+
+    def test_folded_state_is_saved_but_not_presented_as_verified_geometry(self):
+        response = self.client.post(self.url, {"height_cm": 50, "product_state": "folded"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["product_state"], "folded")
+        self.assertFalse(response.data["geometry_3d"]["folding"]["folded_geometry_defined"])
 

@@ -21,6 +21,9 @@ input:focus, select:focus { outline: 3px solid #b7cbbd; border-color: #385443; }
 .number-input em { position: absolute; right: 14px; top: 14px; color: #777a74; font-style: normal; font-weight: 400; }
 .toggle { display: flex; gap: 10px; align-items: center; font-size: 14px; }
 .toggle input { width: 18px; height: 18px; accent-color: #385443; }
+.state-switch { margin: 0; padding: 12px; border: 1px solid #d4d2ca; border-radius: 10px; display: flex; gap: 16px; }
+.state-switch legend { padding: 0 6px; color: #777a74; font-size: 12px; }
+.state-switch label { display: flex; gap: 6px; align-items: center; font-size: 13px; }
 .link-button { border: 0; background: none; padding: 0; color: #385443; text-align: left; cursor: pointer; text-decoration: underline; }
 .results { min-width: 0; display: grid; gap: 24px; }
 .projection-viewer { display: grid; gap: 12px; }
@@ -85,6 +88,9 @@ dd { margin: 5px 0 0; font-weight: 700; }
 .image-tabs { display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #dedcd4; padding-bottom: 12px; }
 .image-tabs button, .image-editor button, .gallery-actions button, .primary-button { border: 1px solid #bdc7c0; border-radius: 9px; background: white; color: #385443; padding: 9px 12px; cursor: pointer; font: inherit; }
 .image-tabs button.active, .primary-button { background: #385443; color: white; border-color: #385443; }
+.render-mode-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 5px; border-radius: 12px; background: #e9e8e2; }
+.render-mode-tabs button { border: 0; border-radius: 9px; padding: 10px; background: transparent; color: #59615b; cursor: pointer; font: inherit; }
+.render-mode-tabs button.active { background: white; color: #263c30; box-shadow: 0 2px 9px rgba(25,35,28,.12); font-weight: 700; }
 button:disabled { opacity: .55; cursor: default; }
 .gallery-workspace { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 20px; }
 .image-upload { display: grid; gap: 12px; align-content: start; }
@@ -114,6 +120,19 @@ button:disabled { opacity: .55; cursor: default; }
 .projection-viewer.hide-image-labels svg text { display: none; }
 .projection-viewer.hide-image-dimensions .offset-line, .projection-viewer.hide-image-dimensions .dimension-cap, .projection-viewer.hide-image-dimensions .control-line { display: none; }
 .folded-note { margin: 0; padding: 12px; border-radius: 10px; background: #f4f1e8; color: #6e675b; font-size: 13px; }
+.photo-accuracy-note { margin: 0; padding: 12px; border-radius: 10px; background: #edf1ee; color: #4c5c52; font-size: 13px; }
+.transparent-background { background-image: linear-gradient(45deg,#ddd 25%,transparent 25%),linear-gradient(-45deg,#ddd 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ddd 75%),linear-gradient(-45deg,transparent 75%,#ddd 75%) !important; background-size: 20px 20px !important; background-position: 0 0,0 10px,10px -10px,-10px 0 !important; }
+.realistic-viewer { display: grid; gap: 12px; padding: 18px; min-width: 620px; }
+.realistic-main { border-radius: 16px; overflow: hidden; background: radial-gradient(circle at 48% 34%,rgba(255,255,255,.95),rgba(236,234,225,.88) 58%,rgba(211,211,201,.9)); box-shadow: inset 0 0 45px rgba(37,45,39,.09); }
+.realistic-main svg { display: block; width: var(--image-scale,100%); max-height: 520px; margin: auto; }
+.realistic-thumbnails { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.realistic-thumbnails button { min-width: 0; border: 1px solid #d3d5ce; border-radius: 10px; background: rgba(255,255,255,.86); padding: 5px; cursor: pointer; color: #49534c; }
+.realistic-thumbnails button.active { border-color: #385443; box-shadow: 0 0 0 2px #cbd9cf; }
+.realistic-thumbnails svg { display: block; width: 100%; height: 72px; }
+.realistic-thumbnails span { display: block; font-size: 11px; }
+.folded-preview { margin: 40px; min-height: 260px; display: grid; align-content: center; gap: 10px; padding: 30px; border: 1px dashed #aa9d83; border-radius: 16px; background: #f6f1e6; color: #655d50; text-align: center; }
+.folded-preview p { margin: 0; }
 @media (max-width: 760px) { main { padding-top: 24px; } header { display: block; } .brand { margin-bottom: 20px; } .workspace { grid-template-columns: 1fr; } dl, .all-views { grid-template-columns: 1fr; } .wide { grid-column: auto; } }
 @media (max-width: 760px) { .gallery-workspace, .image-gallery { grid-template-columns: 1fr; } .images-module { padding: 16px; } .export-canvas .projection-viewer { min-width: 540px; } }
+@media (max-width: 760px) { .realistic-viewer { min-width: 520px; } .realistic-thumbnails { grid-template-columns: repeat(2,1fr); } .render-mode-tabs { grid-template-columns: 1fr; } }
 

@@ -9,7 +9,7 @@ export function collectPageStyles(options, styleSheets = document.styleSheets) {
 }
 
 export function buildExportSvg(container, options, styleSheets) {
-  const sourceSvgs = [...container.querySelectorAll('.diagram-card svg')]
+  const sourceSvgs = [...container.querySelectorAll('.diagram-card svg, .realistic-main svg')]
   if (!sourceSvgs.length) throw new Error('Нет SVG для экспорта.')
   const [outputWidth, outputHeight] = options.aspect === '1:1' ? [1000, 1000] : [1200, 900]
   const columns = sourceSvgs.length > 1 ? 2 : 1
@@ -21,7 +21,8 @@ export function buildExportSvg(container, options, styleSheets) {
   }).join('')
   const scale = Math.min(outputWidth / naturalWidth, outputHeight / naturalHeight) * (options.scale / 100)
   const x = (outputWidth - naturalWidth * scale) / 2; const y = (outputHeight - naturalHeight * scale) / 2
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${outputWidth}" height="${outputHeight}" viewBox="0 0 ${outputWidth} ${outputHeight}"><style>${collectPageStyles(options, styleSheets)}</style><rect width="100%" height="100%" fill="${options.background}"/><g transform="translate(${x} ${y}) scale(${scale})">${nested}</g></svg>`
+  const background = options.showBackground === false ? '' : `<rect width="100%" height="100%" fill="${options.background}"/>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${outputWidth}" height="${outputHeight}" viewBox="0 0 ${outputWidth} ${outputHeight}"><style>${collectPageStyles(options, styleSheets)}</style>${background}<g transform="translate(${x} ${y}) scale(${scale})">${nested}</g></svg>`
 }
 
 export function svgToPngBlob(source, environment = {}) {
