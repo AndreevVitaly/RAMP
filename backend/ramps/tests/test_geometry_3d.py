@@ -3,7 +3,6 @@ from math import dist
 from django.test import SimpleTestCase
 
 from ramps.services import calculate_ramp_configuration
-from ramps.geometry_3d import SIDE_RAIL_HEIGHT_CM
 
 
 class RampGeometry3DTests(SimpleTestCase):
@@ -47,40 +46,35 @@ class RampGeometry3DTests(SimpleTestCase):
         self.assertEqual((b["x"], b["y"]), (86.6025, 40))  # top XY
         self.assertEqual((b["y"], b["z"]), (40, 50))  # front YZ
 
-    def test_enabled_side_rails_have_normal_height_and_area(self):
+    def test_enabled_side_panels_have_known_length_only(self):
         result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, side_rails=True)
-        rails = result["geometry_3d"]["side_rails"]
-        self.assertTrue(rails["enabled"])
-        self.assertEqual(rails["count"], 2)
-        self.assertEqual(rails["length_cm"], 100)
-        self.assertEqual(rails["height_cm"], SIDE_RAIL_HEIGHT_CM)
-        self.assertEqual(rails["area_each_cm2"], 500)
-        self.assertEqual(rails["area_total_cm2"], 1000)
+        panels = result["geometry_3d"]["side_panels"]
+        self.assertTrue(panels["enabled"])
+        self.assertEqual(panels["count"], 2)
+        self.assertEqual(panels["length_cm"], 100)
+        self.assertFalse(panels["depth_defined"])
+        self.assertFalse(panels["thickness_defined"])
+        self.assertFalse(panels["area_defined"])
+        self.assertNotIn("height_cm", panels)
         for name in ("left", "right"):
-            rail = rails[name]
-            normal_distance = dist(
-                (rail["bottom_start"]["x"], rail["bottom_start"]["z"]),
-                (rail["top_start"]["x"], rail["top_start"]["z"]),
-            )
-            rail_length = dist(
-                (rail["bottom_start"]["x"], rail["bottom_start"]["z"]),
-                (rail["bottom_end"]["x"], rail["bottom_end"]["z"]),
-            )
-            self.assertAlmostEqual(normal_distance, 5, places=4)
-            self.assertAlmostEqual(rail_length, 100, places=4)
-        self.assertEqual(rails["left"]["bottom_start"]["y"], 0)
-        self.assertEqual(rails["right"]["bottom_start"]["y"], 40)
+            panel = panels[name]
+            panel_length = dist(panel["top_start"].values(), panel["top_end"].values())
+            self.assertAlmostEqual(panel_length, 100, places=4)
+        self.assertEqual(panels["left"]["top_start"]["y"], 0)
+        self.assertEqual(panels["right"]["top_start"]["y"], 40)
+        self.assertEqual(result["geometry_3d"]["side_rails"], panels)
+        self.assertEqual(len(result["geometry_3d"]["steps"]), 7)
 
     def test_disabled_side_rails_have_no_geometry(self):
         result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, side_rails=False)
-        rails = result["geometry_3d"]["side_rails"]
-        self.assertEqual(rails, {"enabled": False, "count": 0})
+        panels = result["geometry_3d"]["side_panels"]
+        self.assertEqual(panels, {"enabled": False, "count": 0})
+        self.assertEqual(result["geometry_3d"]["side_rails"], panels)
 
     def test_side_rails_follow_length_and_width(self):
         for height, length, width in ((50, 100, 40), (60, 120, 40), (70, 140, 40), (50, 100, 55)):
             with self.subTest(height=height, length=length, width=width):
-                rails = calculate_ramp_configuration(height_cm=height, ramp_length_cm=length, width_cm=width, side_rails=True)["geometry_3d"]["side_rails"]
-                self.assertEqual(rails["length_cm"], length)
-                self.assertEqual(rails["height_cm"], 5)
-                self.assertEqual(rails["left"]["bottom_start"]["y"], 0)
-                self.assertEqual(rails["right"]["bottom_start"]["y"], width)
+                panels = calculate_ramp_configuration(height_cm=height, ramp_length_cm=length, width_cm=width, side_rails=True)["geometry_3d"]["side_panels"]
+                self.assertEqual(panels["length_cm"], length)
+                self.assertEqual(panels["left"]["top_start"]["y"], 0)
+                self.assertEqual(panels["right"]["top_start"]["y"], width)

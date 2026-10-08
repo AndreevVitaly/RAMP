@@ -77,11 +77,10 @@ export default function App() {
             <div><dt>Зазор от опоры до C</dt><dd>{result.geometry.support_foot_to_base_end_cm} см</dd></div>
             <div><dt>Механика стойки</dt><dd>Складная, 2 петли</dd></div>
             <div><dt>Рабочее состояние</dt><dd>{result.geometry.support.state === 'deployed' ? 'Разложена' : 'Сложена'}</dd></div>
-            {result.geometry_3d.side_rails.enabled ? <>
-              <div><dt>Боковые бортики</dt><dd>2 шт.</dd></div>
-              <div><dt>Длина каждого</dt><dd>{result.geometry_3d.side_rails.length_cm} см</dd></div>
-              <div><dt>Высота бортика</dt><dd>{result.geometry_3d.side_rails.height_cm} см</dd></div>
-            </> : <div><dt>Боковые бортики</dt><dd>Нет</dd></div>}
+            {result.geometry_3d.side_panels.enabled ? <>
+              <div><dt>Боковые панели</dt><dd>2 шт.</dd></div>
+              <div><dt>Длина каждой</dt><dd>{result.geometry_3d.side_panels.length_cm} см</dd></div>
+            </> : <div><dt>Боковые панели</dt><dd>Нет</dd></div>}
             <div className="wide"><dt>Положения реек</dt><dd>{result.step_positions_cm.join(', ')} см</dd></div>
           </dl></div>
         </>}

@@ -1,7 +1,4 @@
 from dataclasses import asdict, dataclass
-from math import cos, radians, sin
-
-SIDE_RAIL_HEIGHT_CM = 5.0
 
 
 @dataclass(frozen=True)
@@ -68,32 +65,24 @@ def build_ramp_geometry_3d(
     ]
     hinge_center = point(support_hinge["x"], center_y, support_hinge["y"])
     foot_center = point(support_foot["x"], center_y, support_foot["y"])
-    side_rails = {"enabled": False, "count": 0}
+    side_panels = {"enabled": False, "count": 0}
     if side_rails_enabled:
-        angle_rad = radians(angle_deg)
-        normal_x = -sin(angle_rad)
-        normal_z = cos(angle_rad)
-
-        def rail_at(y):
+        def panel_at(y):
             return {
-                "bottom_start": point(0, y, 0),
-                "bottom_end": point(horizontal_run_cm, y, height_cm),
-                "top_start": point(SIDE_RAIL_HEIGHT_CM * normal_x, y, SIDE_RAIL_HEIGHT_CM * normal_z),
-                "top_end": point(horizontal_run_cm + SIDE_RAIL_HEIGHT_CM * normal_x, y, height_cm + SIDE_RAIL_HEIGHT_CM * normal_z),
+                "top_start": point(0, y, 0),
+                "top_end": point(horizontal_run_cm, y, height_cm),
             }
 
-        area = ramp_length_cm * SIDE_RAIL_HEIGHT_CM
-        side_rails = {
+        side_panels = {
             "enabled": True,
             "count": 2,
-            "height_cm": SIDE_RAIL_HEIGHT_CM,
             "length_cm": round(ramp_length_cm, 4),
-            "area_each_cm2": round(area, 4),
-            "area_total_cm2": round(area * 2, 4),
+            "depth_cm": None,
+            "depth_defined": False,
+            "area_defined": False,
             "thickness_defined": False,
-            "normal_xz": {"x": round(normal_x, 6), "z": round(normal_z, 6)},
-            "left": rail_at(0),
-            "right": rail_at(width_cm),
+            "left": panel_at(0),
+            "right": panel_at(width_cm),
         }
     return {
         "coordinate_system": {
@@ -132,6 +121,8 @@ def build_ramp_geometry_3d(
             "dimensions_defined": False,
             "display_note": "Схематично — размеры не определены",
         },
-        "side_rails": side_rails,
+        "side_panels": side_panels,
+        # Temporary alias for clients created before the terminology correction.
+        "side_rails": side_panels,
     }
 

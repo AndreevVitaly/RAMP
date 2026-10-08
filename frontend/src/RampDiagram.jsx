@@ -4,13 +4,14 @@ const COLORS = {
   black: '#202226',
   beige: '#c7ad85',
 }
+const VISUAL_SIDE_PANEL_DEPTH_PX = 12
 
 export default function RampDiagram({ ramp }) {
   const geometry = ramp.geometry
   const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_hinge: D, support_foot: S } = geometry.points
   const support = geometry.support
   const measurements = geometry.measurements
-  const sideRails = ramp.geometry_3d.side_rails
+  const sidePanels = ramp.geometry_3d.side_panels
   const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
   const usableWidth = canvas.width - canvas.left - canvas.right
   const usableHeight = canvas.height - canvas.top - canvas.bottom
@@ -29,11 +30,10 @@ export default function RampDiagram({ ramp }) {
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(C.x)} y2={sy(C.y)} className="base-line" />
         <line x1={sx(S.x)} y1={sy(S.y)} x2={sx(D.x)} y2={sy(D.y)} className="support-line" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(B.x)} y2={sy(B.y)} stroke={COLORS[ramp.color]} className="ramp-line" />
-        {sideRails.enabled && <polygon points={`${sx(sideRails.left.bottom_start.x)},${sy(sideRails.left.bottom_start.z)} ${sx(sideRails.left.bottom_end.x)},${sy(sideRails.left.bottom_end.z)} ${sx(sideRails.left.top_end.x)},${sy(sideRails.left.top_end.z)} ${sx(sideRails.left.top_start.x)},${sy(sideRails.left.top_start.z)}`} fill={COLORS[ramp.color]} className="side-rail-profile" />}
-
-        {geometry.step_points.map((rail) => (
+        {!sidePanels.enabled && geometry.step_points.map((rail) => (
           <line key={rail.start_distance_cm} x1={sx(rail.start.x)} y1={sy(rail.start.y)} x2={sx(rail.end.x)} y2={sy(rail.end.y)} className="side-step-band" />
         ))}
+        {sidePanels.enabled && <polygon points={`${sx(A.x)},${sy(A.y)} ${sx(B.x)},${sy(B.y)} ${sx(B.x)},${sy(B.y) + VISUAL_SIDE_PANEL_DEPTH_PX} ${sx(A.x)},${sy(A.y) + VISUAL_SIDE_PANEL_DEPTH_PX}`} fill={COLORS[ramp.color]} className="side-panel-profile" />}
 
         <rect x={sx(S.x) - 18} y={floorY - 12} width="18" height="12" rx="1.5" className="support-stop" />
         <circle cx={sx(D.x)} cy={sy(D.y)} r="9" className="hinge-outer" />
