@@ -1,5 +1,6 @@
 import { COLORS } from './materials'
-export default function RampDiagram({ ramp }) {
+import { DogSilhouette } from './pets'
+export default function RampDiagram({ ramp, pet }) {
   const geometry = ramp.geometry
   const { ramp_start: A, ramp_end: B, vertical_projection: V, base_end: C, support_hinge: D, support_foot: S } = geometry.points
   const support = geometry.support
@@ -9,7 +10,11 @@ export default function RampDiagram({ ramp }) {
   const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
   const usableWidth = canvas.width - canvas.left - canvas.right
   const usableHeight = canvas.height - canvas.top - canvas.bottom
-  const scale = Math.min(usableWidth / V.x, usableHeight / B.y)
+  const rampEndX = Math.max(C.x, V.x)
+  const petGap = pet?.enabled ? 10 : 0
+  const petLength = pet?.enabled ? pet.length_cm : 0
+  const petHeight = pet?.enabled ? pet.height_cm : 0
+  const scale = Math.min(usableWidth / (rampEndX + petGap + petLength), usableHeight / Math.max(B.y, petHeight))
   const floorY = canvas.height - canvas.bottom
   const sx = (x) => canvas.left + x * scale
   // Backend uses Y up; SVG uses Y down, so only this display transform inverts Y.
@@ -28,6 +33,7 @@ export default function RampDiagram({ ramp }) {
           <line key={rail.start_distance_cm} x1={sx(rail.start.x)} y1={sy(rail.start.y)} x2={sx(rail.end.x)} y2={sy(rail.end.y)} className="side-step-band" />
         ))}
         {sidePanels.enabled && <polygon points={`${sx(sidePanels.left.top_start.x)},${sy(sidePanels.left.top_start.z)} ${sx(sidePanels.left.top_end.x)},${sy(sidePanels.left.top_end.z)} ${sx(sidePanels.left.bottom_end.x)},${sy(sidePanels.left.bottom_end.z)} ${sx(sidePanels.left.bottom_start.x)},${sy(sidePanels.left.bottom_start.z)}`} fill={COLORS[ramp.color]} className="side-panel-profile" />}
+        <DogSilhouette pet={pet} x={sx(rampEndX + petGap)} groundY={floorY} heightPx={scale * petHeight} />
 
         <rect x={sx(S.x) - 18} y={floorY - 12} width="18" height="12" rx="1.5" className="support-stop" />
         <circle cx={sx(D.x)} cy={sy(D.y)} r="9" className="hinge-outer" />

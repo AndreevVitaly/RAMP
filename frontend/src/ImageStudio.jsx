@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import ImageGallery from './ImageGallery'
 import ProjectionViewer from './ProjectionViewer'
 import RealisticViewer from './RealisticViewer'
-import { buildExportSvg, svgToPngBlob } from './imageExport'
+import { buildExportSvg, prepareExportContainer, svgToPngBlob } from './imageExport'
 
 const TABS = [['photos', 'Фотографии'], ['illustrations', 'Иллюстрации'], ['builder', 'Конструктор рисунков']]
 
@@ -11,20 +11,24 @@ function download(blob, name) {
   anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export default function ImageStudio({ ramp, configuration }) {
+export default function ImageStudio({ ramp, configuration, pet }) {
   const [tab, setTab] = useState('builder')
   const [view, setView] = useState('axon')
   const [renderMode, setRenderMode] = useState('realistic')
   const [options, setOptions] = useState({ background: '#f4f1e8', showBackground: true, showDimensions: true, showLabels: true, scale: 100, theme: 'light', aspect: '4:3' })
   const canvasRef = useRef(null)
 
-  function exportSvg() {
-    try { download(new Blob([buildExportSvg(canvasRef.current, options)], { type: 'image/svg+xml;charset=utf-8' }), `ramp-${view}.svg`) } catch (error) { alert(error.message) }
+  async function exportSvg() {
+    try {
+      const prepared = await prepareExportContainer(canvasRef.current)
+      download(new Blob([buildExportSvg(prepared, options)], { type: 'image/svg+xml;charset=utf-8' }), `ramp-${view}.svg`)
+    } catch (error) { alert(error.message) }
   }
 
   async function exportPng() {
     try {
-      const png = await svgToPngBlob(buildExportSvg(canvasRef.current, options)); download(png, `ramp-${view}.png`)
+      const prepared = await prepareExportContainer(canvasRef.current)
+      const png = await svgToPngBlob(buildExportSvg(prepared, options)); download(png, `ramp-${view}.png`)
     } catch (error) { alert(error.message) }
   }
 
@@ -45,8 +49,7 @@ export default function ImageStudio({ ramp, configuration }) {
         <label>Оформление <select value={options.theme} onChange={(event) => setOptions({ ...options, theme: event.target.value })}><option value="light">Светлое</option><option value="dark">Тёмное</option></select></label>
         <button type="button" onClick={exportSvg} disabled={renderMode !== 'blueprint'} title="SVG предназначен для технических видов">Экспорт SVG</button><button type="button" onClick={exportPng} disabled={renderMode === 'photo'}>Экспорт PNG</button>
       </div>
-      {renderMode === 'photo' ? <><p className="photo-accuracy-note">Фотографии показывают изготовленные изделия и не считаются точным изображением текущих размеров, если их конфигурация отличается.</p><ImageGallery kind="photo" configuration={configuration} /></> : <div className={`export-canvas aspect-${options.aspect.replace(':', '-')} ${options.showBackground ? '' : 'transparent-background'}`} style={{ background: options.showBackground ? options.background : 'transparent' }}>{renderMode === 'blueprint' ? <ProjectionViewer ramp={ramp} view={view} onViewChange={setView} displayOptions={{ ...options, background: options.showBackground ? options.background : 'transparent' }} containerRef={canvasRef} /> : <RealisticViewer ramp={ramp} view={view === 'all' ? 'axon' : view} onViewChange={setView} displayOptions={options} containerRef={canvasRef} />}</div>}
-      <p className="folded-note">Переключатель «Разложен / Сложен» сохраняется в общей конфигурации. Неподтверждённая кинематика сложенного состояния не подменяется вымышленной моделью.</p>
+      {renderMode === 'photo' ? <><p className="photo-accuracy-note">Фотографии показывают изготовленные изделия и не считаются точным изображением текущих размеров, если их конфигурация отличается.</p><ImageGallery kind="photo" configuration={configuration} /></> : <div className={`export-canvas aspect-${options.aspect.replace(':', '-')} ${options.showBackground ? '' : 'transparent-background'}`} style={{ background: options.showBackground ? options.background : 'transparent' }}>{renderMode === 'blueprint' ? <ProjectionViewer ramp={ramp} pet={pet} view={view} onViewChange={setView} displayOptions={{ ...options, background: options.showBackground ? options.background : 'transparent' }} containerRef={canvasRef} /> : <RealisticViewer ramp={ramp} pet={pet} view={view === 'all' ? 'axon' : view} onViewChange={setView} displayOptions={options} containerRef={canvasRef} />}</div>}
     </div>}
   </section>
 }

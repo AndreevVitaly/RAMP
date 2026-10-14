@@ -38,3 +38,31 @@ export async function deleteRampImage(id) {
   return parseResponse(await fetch(`/api/ramp/images/${id}/`, { method: 'DELETE' }))
 }
 
+export async function requestPhoneCode(fields) {
+  return parseResponse(await fetch('/api/ramp/account/request-code/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }))
+}
+
+export async function verifyPhoneCode(phone, code) {
+  return parseResponse(await fetch('/api/ramp/account/verify-code/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, code }) }))
+}
+
+export async function getAccount(token) {
+  return parseResponse(await fetch('/api/ramp/account/me/', { headers: { Authorization: `Bearer ${token}` } }))
+}
+
+export async function sendTechnicalBrief(token, fields) {
+  return parseResponse(await fetch('/api/ramp/account/briefs/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
+}
+
+export async function getAdminSettings() {
+  return parseResponse(await fetch('/api/ramp/admin/settings/'))
+}
+
+export async function saveAdminSettings(key, fields) {
+  return parseResponse(await fetch('/api/ramp/admin/settings/', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Admin-Key': key }, body: JSON.stringify(fields) }))
+}
+
+export async function getAdminBriefs(key) {
+  return parseResponse(await fetch('/api/ramp/admin/briefs/', { headers: { 'X-Admin-Key': key } }))
+}
+

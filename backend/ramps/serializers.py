@@ -4,7 +4,7 @@ from pathlib import Path
 
 from rest_framework import serializers
 
-from .models import RampImage
+from .models import AdminContactSettings, Customer, RampImage, TechnicalBrief
 from .services import (
     ALLOWED_COLORS,
     DEFAULT_COLOR,
@@ -76,4 +76,33 @@ class RampImageSerializer(serializers.ModelSerializer):
         if validated_data.get("is_primary"):
             RampImage.objects.exclude(pk=instance.pk).update(is_primary=False)
         return super().update(instance, validated_data)
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ("id", "name", "email", "phone", "phone_verified", "created_at")
+        read_only_fields = fields
+
+
+class AdminContactSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdminContactSettings
+        fields = ("email", "phone", "telegram", "max_contact", "preferred_channel", "updated_at")
+        read_only_fields = ("updated_at",)
+
+
+class TechnicalBriefSerializer(serializers.ModelSerializer):
+    customer = CustomerSerializer(read_only=True)
+
+    class Meta:
+        model = TechnicalBrief
+        fields = ("id", "customer", "message", "configuration", "result", "requested_channels", "delivery_status", "created_at")
+        read_only_fields = ("id", "customer", "delivery_status", "created_at")
+
+    def validate_requested_channels(self, value):
+        allowed = {"email", "telegram", "max"}
+        if not value or any(item not in allowed for item in value):
+            raise serializers.ValidationError("Выберите хотя бы один доступный канал отправки.")
+        return list(dict.fromkeys(value))
 

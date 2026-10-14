@@ -8,6 +8,30 @@ export function collectPageStyles(options, styleSheets = document.styleSheets) {
   return css
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(new Error('Не удалось встроить изображение питомца в экспорт.'))
+    reader.readAsDataURL(blob)
+  })
+}
+
+export async function prepareExportContainer(container, fetchImage = fetch) {
+  const clone = container.cloneNode(true)
+  const images = [...clone.querySelectorAll('svg image')]
+  await Promise.all(images.map(async (image) => {
+    const href = image.getAttribute('href') || image.getAttribute('xlink:href')
+    if (!href || href.startsWith('data:')) return
+    const response = await fetchImage(href)
+    if (!response.ok) throw new Error(`Не удалось загрузить изображение для экспорта: ${href}`)
+    const dataUrl = await blobToDataUrl(await response.blob())
+    image.setAttribute('href', dataUrl)
+    image.removeAttribute('xlink:href')
+  }))
+  return clone
+}
+
 export function buildExportSvg(container, options, styleSheets) {
   const sourceSvgs = [...container.querySelectorAll('.diagram-card svg, .realistic-main svg')]
   if (!sourceSvgs.length) throw new Error('Нет SVG для экспорта.')
