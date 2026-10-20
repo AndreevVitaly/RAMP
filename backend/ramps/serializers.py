@@ -81,7 +81,7 @@ class RampImageSerializer(serializers.ModelSerializer):
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ("id", "name", "email", "phone", "phone_verified", "created_at")
+        fields = ("id", "name", "email", "phone", "email_verified", "created_at")
         read_only_fields = fields
 
 

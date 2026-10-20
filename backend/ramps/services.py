@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass
 from math import asin, degrees, sqrt
 
-from .geometry import STEP_WIDTH_CM, RampGeometryError, build_side_profile
+from .geometry import STEP_HEIGHT_CM, STEP_WIDTH_CM, RampGeometryError, build_side_profile
 from .geometry_3d import build_ramp_geometry_3d
 from .pricing import calculate_ramp_price
 
@@ -30,6 +30,7 @@ class RampConfiguration:
     horizontal_run_cm: float
     step_count: int
     step_width_cm: float
+    step_height_cm: float
     step_positions_cm: list[float]
     slat_total_length_cm: float
     has_slats: bool
@@ -103,6 +104,7 @@ def calculate_ramp_configuration(
         horizontal_run_cm=horizontal_run,
         base_length_cm=geometry["base_length_cm"],
         step_points=geometry["step_points"],
+        step_height_cm=STEP_HEIGHT_CM,
         support_hinge=geometry["points"]["support_hinge"],
         support_foot=geometry["points"]["support_foot"],
         support_panel_width_cm=support_width,
@@ -123,6 +125,7 @@ def calculate_ramp_configuration(
         horizontal_run_cm=round(horizontal_run, 4),
         step_count=len(positions),
         step_width_cm=STEP_WIDTH_CM,
+        step_height_cm=STEP_HEIGHT_CM,
         step_positions_cm=positions,
         slat_total_length_cm=round(len(positions) * width, 4),
         has_slats=bool(has_slats),

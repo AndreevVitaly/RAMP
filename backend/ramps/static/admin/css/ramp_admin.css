@@ -1,0 +1,117 @@
+/* Shared visual language with the RAMP configurator. */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+    --primary: #385443;
+    --secondary: #385443;
+    --accent: #edf2eb;
+    --primary-fg: #fff;
+    --body-fg: #20231f;
+    --body-bg: #f3f1ea;
+    --body-quiet-color: #697067;
+    --body-medium-color: #454c45;
+    --body-loud-color: #20231f;
+    --header-color: #fff;
+    --header-branding-color: #fff;
+    --header-bg: #385443;
+    --header-link-color: #fff;
+    --breadcrumbs-fg: #dce8dd;
+    --breadcrumbs-link-fg: #fff;
+    --breadcrumbs-bg: #476653;
+    --link-fg: #30513d;
+    --link-hover-color: #183728;
+    --link-selected-fg: #30513d;
+    --hairline-color: #e6e3da;
+    --border-color: #d6d3ca;
+    --darkened-bg: #f8f7f2;
+    --selected-bg: #e8efe8;
+    --selected-row: #edf3eb;
+    --button-fg: #fff;
+    --button-bg: #385443;
+    --button-hover-bg: #294433;
+    --default-button-bg: #385443;
+    --default-button-hover-bg: #294433;
+    --object-tools-bg: #385443;
+    --object-tools-hover-bg: #294433;
+    color-scheme: light;
+}
+
+body { background: var(--body-bg); }
+
+#header {
+    min-height: 76px;
+    padding: 12px max(24px, calc((100vw - 1440px) / 2));
+    box-sizing: border-box;
+    box-shadow: 0 6px 20px rgb(31 49 36 / 10%);
+}
+
+.ramp-admin-brand { display: flex; align-items: center; gap: 16px; }
+.ramp-admin-logo {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    background: #294433;
+    color: #fff !important;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+.ramp-admin-brand-text { display: flex; flex-direction: column; gap: 3px; color: #fff; }
+.ramp-admin-brand-text strong { font-size: 18px; line-height: 1.2; }
+.ramp-admin-brand-text span { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .83; }
+#user-tools { line-height: 1.6; }
+#user-tools a, #logout-form button { text-decoration-color: rgb(255 255 255 / 55%); }
+
+.breadcrumbs { padding: 13px max(24px, calc((100vw - 1440px) / 2)); }
+#content { padding: 32px max(24px, calc((100vw - 1440px) / 2)); }
+#content h1 { font-size: clamp(23px, 2.6vw, 34px); font-weight: 650; letter-spacing: -.025em; }
+
+.module, #content-related .module, #changelist, .inline-group, .submit-row,
+fieldset.module, #nav-sidebar, .selector, .calendarbox, .clockbox {
+    border: 1px solid #dedcd4;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgb(43 48 39 / 6%);
+    overflow: hidden;
+}
+.module h2, .module caption, .inline-group h2 {
+    background: #385443;
+    color: #fff;
+    padding: 12px 16px;
+    font-weight: 650;
+    letter-spacing: .015em;
+}
+.module h2 a:link, .module h2 a:visited,
+.module caption a:link, .module caption a:visited { color: #fff; }
+.module table td, .module table th { padding: 12px 16px; }
+.module table tr:nth-child(even), #changelist table tr:nth-child(even) { background: #faf9f5; }
+
+input, textarea, select, .vTextField, .vLargeTextField {
+    border-color: #cbc9c0;
+    border-radius: 10px;
+    background-color: #faf9f5;
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid #8fae97; outline-offset: 1px; }
+input[type="submit"], button, .button, a.button,
+.object-tools a, .submit-row input, .submit-row a.deletelink { border-radius: 10px; }
+input[type="submit"], .button, a.button { padding: 10px 16px; }
+
+.dashboard #content { max-width: 1440px; margin: auto; }
+.dashboard #content-main { min-width: 0; }
+.dashboard #content-related { background: transparent; }
+#content-related .module h2 { color: #fff; }
+#nav-sidebar { border-radius: 0 18px 18px 0; }
+#nav-sidebar .module { border: 0; box-shadow: none; }
+.login #content { max-width: 500px; margin: 7vh auto 0; }
+.login #content-main { border-radius: 20px; background: #fff; padding: 28px; border: 1px solid #dedcd4; box-shadow: 0 18px 45px rgb(43 48 39 / 10%); }
+.login #header { justify-content: center; }
+
+@media (max-width: 767px) {
+    #header { padding: 12px 18px; }
+    .ramp-admin-brand-text span { display: none; }
+    .breadcrumbs { padding: 12px 18px; }
+    #content { padding: 22px 16px; }
+    .dashboard #content-main, .dashboard #content-related { width: 100%; }
+    .module, #content-related .module { border-radius: 14px; }
+}

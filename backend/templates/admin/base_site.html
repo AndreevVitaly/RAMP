@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/ramp_admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div class="ramp-admin-brand">
+  <a class="ramp-admin-logo" href="{% url 'admin:index' %}" aria-label="RAMP — главная страница администрирования">RAMP</a>
+  <div class="ramp-admin-brand-text">
+    <strong>Управление RAMP</strong>
+    <span>Конструктор пандусов для собак</span>
+  </div>
+</div>
+{% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
+{% endblock %}

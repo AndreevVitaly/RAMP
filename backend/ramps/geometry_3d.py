@@ -24,6 +24,7 @@ def build_ramp_geometry_3d(
     horizontal_run_cm: float,
     base_length_cm: float,
     step_points: list[dict],
+    step_height_cm: float,
     support_hinge: dict,
     support_foot: dict,
     support_panel_width_cm: float,
@@ -82,15 +83,27 @@ def build_ramp_geometry_3d(
         **{f"top_{name}": value for name, value in base["corners"].items()},
         **{f"bottom_{name}": point(value["x"], value["y"], value["z"] - finished_panel_thickness_cm) for name, value in base["corners"].items()},
     }
+    def above_surface(p):
+        return point(
+            p["x"] + surface_normal_x * step_height_cm,
+            p["y"],
+            p["z"] + surface_normal_z * step_height_cm,
+        )
+
     steps = [
         {
             "start_distance_cm": step["start_distance_cm"],
             "end_distance_cm": step["end_distance_cm"],
             "width_cm": step["width_cm"],
+            "height_cm": round(step_height_cm, 4),
             "start_left": point(step["start"]["x"], 0, step["start"]["y"]),
             "start_right": point(step["start"]["x"], width_cm, step["start"]["y"]),
             "end_left": point(step["end"]["x"], 0, step["end"]["y"]),
             "end_right": point(step["end"]["x"], width_cm, step["end"]["y"]),
+            "top_start_left": above_surface(point(step["start"]["x"], 0, step["start"]["y"])),
+            "top_start_right": above_surface(point(step["start"]["x"], width_cm, step["start"]["y"])),
+            "top_end_left": above_surface(point(step["end"]["x"], 0, step["end"]["y"])),
+            "top_end_right": above_surface(point(step["end"]["x"], width_cm, step["end"]["y"])),
         }
         for step in step_points
     ]

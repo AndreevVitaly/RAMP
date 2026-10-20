@@ -21,41 +21,60 @@ class RampImage(models.Model):
         ("carpet", "Крупный план покрытия"),
     )
 
-    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
-    file = models.FileField(upload_to=image_upload_path)
-    original_name = models.CharField(max_length=255)
-    file_sha256 = models.CharField(max_length=64)
-    title = models.CharField(max_length=160, blank=True)
-    caption = models.CharField(max_length=300, blank=True)
-    image_type = models.CharField(max_length=30, choices=IMAGE_TYPE_CHOICES, blank=True)
-    color = models.CharField(max_length=30, blank=True)
-    has_slats = models.BooleanField(default=True)
-    side_rails = models.BooleanField(default=False)
-    description = models.TextField(blank=True)
-    configuration = models.JSONField(default=dict, blank=True)
-    is_primary = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    kind = models.CharField("Тип", max_length=20, choices=KIND_CHOICES)
+    file = models.FileField("Файл", upload_to=image_upload_path)
+    original_name = models.CharField("Исходное имя файла", max_length=255)
+    file_sha256 = models.CharField("Контрольная сумма файла", max_length=64)
+    title = models.CharField("Название", max_length=160, blank=True)
+    caption = models.CharField("Подпись", max_length=300, blank=True)
+    image_type = models.CharField("Сюжет изображения", max_length=30, choices=IMAGE_TYPE_CHOICES, blank=True)
+    color = models.CharField("Цвет", max_length=30, blank=True)
+    has_slats = models.BooleanField("Поперечные рейки", default=True)
+    side_rails = models.BooleanField("Боковые бортики", default=False)
+    description = models.TextField("Описание", blank=True)
+    configuration = models.JSONField("Конфигурация", default=dict, blank=True)
+    is_primary = models.BooleanField("Основное изображение", default=False)
+    created_at = models.DateTimeField("Добавлено", auto_now_add=True)
 
     class Meta:
         ordering = ("-is_primary", "-created_at")
+        verbose_name = "Изображение пандуса"
+        verbose_name_plural = "Изображения пандусов"
+
+    def __str__(self):
+        return self.title or self.original_name
 
 
 class AdminContactSettings(models.Model):
-    email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=30, blank=True)
-    telegram = models.CharField(max_length=80, blank=True)
-    max_contact = models.CharField(max_length=160, blank=True)
-    preferred_channel = models.CharField(max_length=20, default="email")
-    updated_at = models.DateTimeField(auto_now=True)
+    email = models.EmailField("Электронная почта", blank=True)
+    phone = models.CharField("Телефон", max_length=30, blank=True)
+    telegram = models.CharField("Telegram", max_length=80, blank=True)
+    max_contact = models.CharField("MAX", max_length=160, blank=True)
+    preferred_channel = models.CharField("Предпочтительный канал", max_length=20, default="email")
+    updated_at = models.DateTimeField("Обновлено", auto_now=True)
+
+    class Meta:
+        verbose_name = "Контакты администратора"
+        verbose_name_plural = "Контакты администратора"
+
+    def __str__(self):
+        return "Контакты администратора"
 
 
 class Customer(models.Model):
-    name = models.CharField(max_length=120)
-    email = models.EmailField()
-    phone = models.CharField(max_length=30, unique=True)
-    phone_verified = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name = models.CharField("Имя", max_length=120)
+    email = models.EmailField("Электронная почта")
+    phone = models.CharField("Телефон", max_length=30, unique=True, null=True, blank=True)
+    email_verified = models.BooleanField("Почта подтверждена", default=False)
+    created_at = models.DateTimeField("Зарегистрирован", auto_now_add=True)
+    updated_at = models.DateTimeField("Обновлено", auto_now=True)
+
+    class Meta:
+        verbose_name = "Клиент"
+        verbose_name_plural = "Клиенты"
+
+    def __str__(self):
+        return f"{self.name} ({self.email})"
 
 
 class PhoneVerification(models.Model):
@@ -76,14 +95,19 @@ class CustomerSession(models.Model):
 
 
 class TechnicalBrief(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="technical_briefs")
-    message = models.TextField(blank=True)
-    configuration = models.JSONField(default=dict)
-    result = models.JSONField(default=dict)
-    requested_channels = models.JSONField(default=list)
-    delivery_status = models.JSONField(default=dict)
-    created_at = models.DateTimeField(auto_now_add=True)
+    customer = models.ForeignKey(Customer, verbose_name="Клиент", on_delete=models.CASCADE, related_name="technical_briefs")
+    message = models.TextField("Комментарий", blank=True)
+    configuration = models.JSONField("Конфигурация", default=dict)
+    result = models.JSONField("Результат расчёта", default=dict)
+    requested_channels = models.JSONField("Каналы отправки", default=list)
+    delivery_status = models.JSONField("Статус отправки", default=dict)
+    created_at = models.DateTimeField("Создано", auto_now_add=True)
 
     class Meta:
         ordering = ("-created_at",)
+        verbose_name = "Техническое задание"
+        verbose_name_plural = "Технические задания"
+
+    def __str__(self):
+        return f"Техническое задание №{self.pk}"
 

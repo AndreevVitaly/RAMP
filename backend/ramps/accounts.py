@@ -6,10 +6,13 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.utils import timezone
 from rest_framework.exceptions import AuthenticationFailed
 
 from .models import AdminContactSettings, CustomerSession
+
+ADMIN_TOKEN_SALT = "ramp-admin-session"
 
 
 def normalize_phone(value):
@@ -43,6 +46,23 @@ def issue_session(customer):
     return token
 
 
+def issue_admin_token():
+    return TimestampSigner(salt=ADMIN_TOKEN_SALT).sign(settings.RAMP_ADMIN_USERNAME)
+
+
+def admin_authorized(request):
+    if request.headers.get("X-Admin-Key") == settings.RAMP_ADMIN_KEY:
+        return True
+    header = request.headers.get("Authorization", "")
+    if not header.startswith("Bearer "):
+        return False
+    try:
+        username = TimestampSigner(salt=ADMIN_TOKEN_SALT).unsign(header[7:], max_age=60 * 60 * 12)
+        return username == settings.RAMP_ADMIN_USERNAME
+    except (BadSignature, SignatureExpired):
+        return False
+
+
 def send_sms_code(phone, code):
     if not settings.SMS_PROVIDER_URL:
         return False
@@ -61,7 +81,7 @@ def deliver_brief(brief):
     customer = brief.customer
     summary = (
         f"Новое техническое задание RAMP №{brief.pk}\n"
-        f"Клиент: {customer.name}\nТелефон: {customer.phone}\nEmail: {customer.email}\n\n"
+        f"Клиент: {customer.name}\nТелефон: {customer.phone or 'не указан'}\nEmail: {customer.email}\n\n"
         f"Комментарий: {brief.message or '—'}\n\nКонфигурация:\n{json.dumps(brief.configuration, ensure_ascii=False, indent=2)}"
     )
     status = {}

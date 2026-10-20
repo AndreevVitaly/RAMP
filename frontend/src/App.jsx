@@ -108,6 +108,7 @@ export default function App() {
             <div><dt>Угол наклона</dt><dd>{result.angle_deg}°</dd></div>
             <div><dt>Поперечные рейки</dt><dd>{result.has_slats ? 'Есть' : 'Нет'}</dd></div>
             {result.has_slats && <div><dt>Количество реек</dt><dd>{result.step_count}</dd></div>}
+            {result.has_slats && <div><dt>Рейка: высота × ширина × длина</dt><dd>{result.step_height_cm} × {result.step_width_cm} × {result.width_cm} см</dd></div>}
             <div><dt>Длина основания</dt><dd>{Math.round(result.geometry.base_length_cm)} см</dd></div>
             <div><dt>Длина стойки</dt><dd>{result.geometry.support_length_cm} см</dd></div>
             <div><dt>Ширина стойки</dt><dd>{result.geometry_3d.support.panel_width_cm} см</dd></div>

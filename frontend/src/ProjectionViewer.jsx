@@ -26,22 +26,22 @@ function TopView({ ramp, pet }) {
   const f = centeredFrame([[0, 0], [run, w], [petX + (pet?.enabled ? pet.length_cm : 0), Math.max(w, pet?.height_cm || 0)]])
   return <figure className="diagram-card projection-card top-product-view"><svg viewBox="0 0 700 410" role="img" aria-label="Пандус, вид сверху">
     <polygon points={`${f.x(0)},${f.y(0)} ${f.x(run)},${f.y(0)} ${f.x(run)},${f.y(w)} ${f.x(0)},${f.y(w)}`} fill={COLORS[ramp.color]} stroke={COLORS[ramp.color]} className="projection-surface product-surface" />
-    {g.steps.map((s) => <polygon key={s.start_distance_cm} points={`${f.x(s.start_left.x)},${f.y(s.start_left.y)} ${f.x(s.end_left.x)},${f.y(s.end_left.y)} ${f.x(s.end_right.x)},${f.y(s.end_right.y)} ${f.x(s.start_right.x)},${f.y(s.start_right.y)}`} fill={COLORS[ramp.color]} className="projection-step-band" />)}
+    {g.steps.map((s) => <polygon key={s.start_distance_cm} points={`${f.x(s.top_start_left.x)},${f.y(s.top_start_left.y)} ${f.x(s.top_end_left.x)},${f.y(s.top_end_left.y)} ${f.x(s.top_end_right.x)},${f.y(s.top_end_right.y)} ${f.x(s.top_start_right.x)},${f.y(s.top_start_right.y)}`} fill={COLORS[ramp.color]} className="projection-step-band" />)}
     <DogSilhouette pet={pet} view="top" x={f.x(petX)} groundY={f.y(w / 2)} heightPx={f.scale * (pet?.height_cm || 0)} />
   </svg></figure>
 }
 
 function FrontView({ ramp, pet }) {
   const g = ramp.geometry_3d; const { height_cm: h, width_cm: w } = g.dimensions
-  const support = g.support.corners
+  const support = g.support.corners; const base = g.base.volume_corners; const surface = g.ramp_surface.volume_corners
   const panelPoints = g.side_panels.enabled ? ['left', 'right'].flatMap((name) => [g.side_panels[name].bottom_end, g.side_panels[name].top_end].map((p) => [p.y, p.z])) : []
   const petX = w + (pet?.enabled ? 10 : 0)
-  const f = frame([[0, 0], [w, h], [petX + (pet?.enabled ? pet.front_width_cm : 0), pet?.height_cm || 0], ...panelPoints])
+  const f = frame([[0, base.bottom_c_left.z], [w, h], [petX + (pet?.enabled ? pet.front_width_cm : 0), pet?.height_cm || 0], ...panelPoints])
   return <Projection title="Вид спереди · YZ"><svg viewBox="0 0 700 410">
-    <rect x={f.x(0)} y={f.y(h)} width={f.x(w) - f.x(0)} height={f.y(0) - f.y(h)} fill={COLORS[ramp.color]} stroke={COLORS[ramp.color]} className="projection-surface front-surface" />
-    <line x1={f.x(0)} y1={f.y(0)} x2={f.x(w)} y2={f.y(0)} className="base-line" />
-    <polygon points={`${f.x(support.foot_left_back.y)},${f.y(support.foot_left_back.z)} ${f.x(support.foot_right_back.y)},${f.y(support.foot_right_back.z)} ${f.x(support.hinge_right_front.y)},${f.y(support.hinge_right_front.z)} ${f.x(support.hinge_left_front.y)},${f.y(support.hinge_left_front.z)}`} fill={COLORS[ramp.color]} className="front-support-panel" />
-    {g.steps.map((s) => <rect key={s.start_distance_cm} x={f.x(0)} y={f.y(s.end_left.z)} width={f.x(w) - f.x(0)} height={f.y(s.start_left.z) - f.y(s.end_left.z)} fill={COLORS[ramp.color]} className="projection-step-band front" />)}
+    <rect x={f.x(0)} y={f.y(h)} width={f.x(w) - f.x(0)} height={f.y(0) - f.y(h)} fill={COLORS[ramp.color]} className="projection-surface front-surface" />
+    <rect x={f.x(0)} y={f.y(base.top_c_left.z)} width={f.x(w) - f.x(0)} height={f.y(base.bottom_c_left.z) - f.y(base.top_c_left.z)} fill={COLORS[ramp.color]} className="projection-base front-base" />
+    <polygon points={`${f.x(support.foot_left_front.y)},${f.y(support.foot_left_front.z)} ${f.x(support.foot_right_front.y)},${f.y(support.foot_right_front.z)} ${f.x(support.hinge_right_front.y)},${f.y(support.hinge_right_front.z)} ${f.x(support.hinge_left_front.y)},${f.y(support.hinge_left_front.z)}`} fill={COLORS[ramp.color]} className="front-support-panel" />
+    <rect x={f.x(0)} y={f.y(surface.top_b_left.z)} width={f.x(w) - f.x(0)} height={f.y(surface.bottom_b_left.z) - f.y(surface.top_b_left.z)} fill={COLORS[ramp.color]} className="projection-surface front-surface" />
     {g.side_panels.enabled && ['left', 'right'].map((name) => {
       const panel = g.side_panels[name]
       return <line key={name} x1={f.x(panel.top_end.y)} y1={f.y(panel.top_end.z)} x2={f.x(panel.bottom_end.y)} y2={f.y(panel.bottom_end.z)} stroke={COLORS[ramp.color]} className="front-side-panel" />
@@ -53,32 +53,38 @@ function FrontView({ ramp, pet }) {
 }
 
 function AxonometricView({ ramp, pet }) {
-  const g = ramp.geometry_3d; const surface = g.ramp_surface.corners; const base = g.base.corners
-  const project = (p) => [(p.x - p.y) * 0.82, p.z - (p.x + p.y) * 0.34]
+  const g = ramp.geometry_3d; const surface = g.ramp_surface.volume_corners; const base = g.base.volume_corners
+  const project = (p) => [(p.x - p.y) * 0.82, p.z - (p.x + p.y) * 0.41]
   const panelPoints = g.side_panels.enabled ? ['left', 'right'].flatMap((name) => Object.values(g.side_panels[name])) : []
   const support = g.support.corners
   const all3d = [...Object.values(surface), ...Object.values(base), ...panelPoints, ...Object.values(support)]; const projected = all3d.map(project)
   const minV = Math.min(...projected.map(([, v]) => v)); const petU = Math.max(...projected.map(([u]) => u)) + (pet?.enabled ? 10 : 0)
   const framed = pet?.enabled ? [...projected, [petU + pet.length_cm, minV], [petU, minV + pet.height_cm]] : projected
   const f = frame(framed)
-  const qxy = (p) => { const [u, v] = project(p); return [f.x(u), f.y(v)] }
-  const q = (p) => qxy(p).join(',')
-  const line = (a, b, cls, key) => <line key={key} x1={f.x(project(a)[0])} y1={f.y(project(a)[1])} x2={f.x(project(b)[0])} y2={f.y(project(b)[1])} className={cls} />
+  const q = (p) => { const [u, v] = project(p); return `${f.x(u)},${f.y(v)}` }
   return <Projection title="Аксонометрия"><svg viewBox="0 0 700 410">
-    <polygon points={`${q(base.a_left)} ${q(base.c_left)} ${q(base.c_right)} ${q(base.a_right)}`} fill={COLORS[ramp.color]} stroke={COLORS[ramp.color]} className="projection-base axon" />
+    <polygon points={`${q(base.bottom_a_left)} ${q(base.bottom_c_left)} ${q(base.bottom_c_right)} ${q(base.bottom_a_right)}`} fill={COLORS[ramp.color]} className="axon-base-bottom" />
+    <polygon points={`${q(base.top_a_left)} ${q(base.top_c_left)} ${q(base.bottom_c_left)} ${q(base.bottom_a_left)}`} fill={COLORS[ramp.color]} className="axon-base-side" />
+    <polygon points={`${q(base.top_c_left)} ${q(base.top_c_right)} ${q(base.bottom_c_right)} ${q(base.bottom_c_left)}`} fill={COLORS[ramp.color]} className="axon-base-end" />
+    <polygon points={`${q(base.top_a_left)} ${q(base.top_c_left)} ${q(base.top_c_right)} ${q(base.top_a_right)}`} fill={COLORS[ramp.color]} stroke={COLORS[ramp.color]} className="projection-base axon" />
     <polygon points={`${q(support.foot_left_back)} ${q(support.hinge_left_back)} ${q(support.hinge_right_back)} ${q(support.foot_right_back)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-back" />
     <polygon points={`${q(support.foot_left_front)} ${q(support.hinge_left_front)} ${q(support.hinge_right_front)} ${q(support.foot_right_front)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-front" />
     <polygon points={`${q(support.foot_left_back)} ${q(support.foot_left_front)} ${q(support.hinge_left_front)} ${q(support.hinge_left_back)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-side" />
     <polygon points={`${q(support.foot_right_back)} ${q(support.foot_right_front)} ${q(support.hinge_right_front)} ${q(support.hinge_right_back)}`} fill={COLORS[ramp.color]} className="axon-support-panel support-side" />
-    <polygon points={`${q(surface.a_left)} ${q(surface.b_left)} ${q(surface.b_right)} ${q(surface.a_right)}`} fill={COLORS[ramp.color]} stroke={COLORS[ramp.color]} className="projection-surface axon-surface" />
-    {g.steps.map((s) => <polygon key={s.start_distance_cm} points={`${q(s.start_left)} ${q(s.end_left)} ${q(s.end_right)} ${q(s.start_right)}`} fill={COLORS[ramp.color]} className="projection-step-band axon-step" />)}
+    <polygon points={`${q(surface.top_a_left)} ${q(surface.top_b_left)} ${q(surface.bottom_b_left)} ${q(surface.bottom_a_left)}`} fill={COLORS[ramp.color]} className="axon-surface-side" />
+    <polygon points={`${q(surface.top_b_left)} ${q(surface.top_b_right)} ${q(surface.bottom_b_right)} ${q(surface.bottom_b_left)}`} fill={COLORS[ramp.color]} className="axon-surface-end" />
+    <polygon points={`${q(surface.top_a_left)} ${q(surface.top_b_left)} ${q(surface.top_b_right)} ${q(surface.top_a_right)}`} fill={COLORS[ramp.color]} stroke={COLORS[ramp.color]} className="projection-surface axon-surface" />
+    {g.steps.map((s) => <g key={s.start_distance_cm}>
+      <polygon points={`${q(s.start_left)} ${q(s.end_left)} ${q(s.top_end_left)} ${q(s.top_start_left)}`} fill={COLORS[ramp.color]} className="axon-slat-side" />
+      <polygon points={`${q(s.end_left)} ${q(s.end_right)} ${q(s.top_end_right)} ${q(s.top_end_left)}`} fill={COLORS[ramp.color]} className="axon-slat-end" />
+      <polygon points={`${q(s.top_start_left)} ${q(s.top_end_left)} ${q(s.top_end_right)} ${q(s.top_start_right)}`} fill={COLORS[ramp.color]} className="projection-step-band axon-step" />
+    </g>)}
     {g.side_panels.enabled && ['left', 'right'].map((name) => {
       const panel = g.side_panels[name]
       return <polygon key={name} points={`${q(panel.top_start)} ${q(panel.top_end)} ${q(panel.bottom_end)} ${q(panel.bottom_start)}`} fill={COLORS[ramp.color]} className="axon-side-panel" />
     })}
-    {line(g.hinge_axis.left, g.hinge_axis.right, 'projection-hinge', 'hinge')}
     <DogSilhouette pet={pet} view="side" x={f.x(petU)} groundY={f.y(minV)} heightPx={f.scale * (pet?.height_cm || 0)} />
-    <text x="22" y="385">Одна модель XYZ · стойка показана по центральной оси</text>
+    <text x="22" y="385">Стойка по центру ширины · рейки закреплены поверх листа</text>
   </svg></Projection>
 }
 

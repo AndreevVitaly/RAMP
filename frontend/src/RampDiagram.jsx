@@ -7,6 +7,7 @@ export default function RampDiagram({ ramp, pet }) {
   const measurements = geometry.measurements
   const sidePanels = ramp.geometry_3d.side_panels
   const supportPanel = ramp.geometry_3d.support.corners
+  const surfaceVolume = ramp.geometry_3d.ramp_surface.volume_corners
   const canvas = { width: 720, height: 430, left: 72, right: 76, top: 60, bottom: 100 }
   const usableWidth = canvas.width - canvas.left - canvas.right
   const usableHeight = canvas.height - canvas.top - canvas.bottom
@@ -28,9 +29,9 @@ export default function RampDiagram({ ramp, pet }) {
         <line x1={sx(B.x)} y1={sy(B.y)} x2={sx(V.x)} y2={sy(V.y)} className="control-line" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(C.x)} y2={sy(C.y)} className="base-line" />
         <polygon points={`${sx(supportPanel.foot_left_front.x)},${sy(supportPanel.foot_left_front.z)} ${sx(supportPanel.hinge_left_front.x)},${sy(supportPanel.hinge_left_front.z)} ${sx(supportPanel.hinge_left_back.x)},${sy(supportPanel.hinge_left_back.z)} ${sx(supportPanel.foot_left_back.x)},${sy(supportPanel.foot_left_back.z)}`} fill={COLORS[ramp.color]} className="support-panel-profile" />
-        <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(B.x)} y2={sy(B.y)} stroke={COLORS[ramp.color]} className="ramp-line" />
-        {!sidePanels.enabled && geometry.step_points.map((rail) => (
-          <line key={rail.start_distance_cm} x1={sx(rail.start.x)} y1={sy(rail.start.y)} x2={sx(rail.end.x)} y2={sy(rail.end.y)} className="side-step-band" />
+        <polygon points={`${sx(surfaceVolume.top_a_left.x)},${sy(surfaceVolume.top_a_left.z)} ${sx(surfaceVolume.top_b_left.x)},${sy(surfaceVolume.top_b_left.z)} ${sx(surfaceVolume.bottom_b_left.x)},${sy(surfaceVolume.bottom_b_left.z)} ${sx(surfaceVolume.bottom_a_left.x)},${sy(surfaceVolume.bottom_a_left.z)}`} fill={COLORS[ramp.color]} className="ramp-profile-slab" />
+        {!sidePanels.enabled && ramp.geometry_3d.steps.map((rail) => (
+          <polygon key={rail.start_distance_cm} points={`${sx(rail.start_left.x)},${sy(rail.start_left.z)} ${sx(rail.end_left.x)},${sy(rail.end_left.z)} ${sx(rail.top_end_left.x)},${sy(rail.top_end_left.z)} ${sx(rail.top_start_left.x)},${sy(rail.top_start_left.z)}`} fill={COLORS[ramp.color]} className="side-slat-profile" />
         ))}
         {sidePanels.enabled && <polygon points={`${sx(sidePanels.left.top_start.x)},${sy(sidePanels.left.top_start.z)} ${sx(sidePanels.left.top_end.x)},${sy(sidePanels.left.top_end.z)} ${sx(sidePanels.left.bottom_end.x)},${sy(sidePanels.left.bottom_end.z)} ${sx(sidePanels.left.bottom_start.x)},${sy(sidePanels.left.bottom_start.z)}`} fill={COLORS[ramp.color]} className="side-panel-profile" />}
         <DogSilhouette pet={pet} x={sx(rampEndX + petGap)} groundY={floorY} heightPx={scale * petHeight} />

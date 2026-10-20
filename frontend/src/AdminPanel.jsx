@@ -3,28 +3,34 @@ import { getAdminBriefs, getAdminSettings, saveAdminSettings } from './api'
 
 export default function AdminPanel({ onClose }) {
   const [key, setKey] = useState('')
+  const adminToken = sessionStorage.getItem('ramp_admin_token') || ''
   const [settings, setSettings] = useState({ email: '', phone: '', telegram: '', max_contact: '', preferred_channel: 'email' })
   const [briefs, setBriefs] = useState([])
   const [message, setMessage] = useState('')
 
-  useEffect(() => { getAdminSettings().then(setSettings).catch(() => {}) }, [])
+  useEffect(() => {
+    getAdminSettings().then(setSettings).catch(() => {})
+    if (adminToken) getAdminBriefs(adminToken).then(setBriefs).catch((error) => setMessage(error.message))
+  }, [])
 
   async function save(event) {
     event.preventDefault(); setMessage('')
     try {
-      const saved = await saveAdminSettings(key, settings); setSettings(saved)
-      setBriefs(await getAdminBriefs(key)); setMessage('Контакты сохранены.')
+      const credential = adminToken || key
+      const saved = await saveAdminSettings(credential, settings); setSettings(saved)
+      setBriefs(await getAdminBriefs(credential)); setMessage('Контакты сохранены.')
     } catch (error) { setMessage(error.message) }
   }
 
   async function load() {
-    try { setBriefs(await getAdminBriefs(key)); setMessage('Заявки обновлены.') } catch (error) { setMessage(error.message) }
+    try { setBriefs(await getAdminBriefs(adminToken || key)); setMessage('Заявки обновлены.') } catch (error) { setMessage(error.message) }
   }
 
   return <main><header><div className="brand">RAMP</div><div><p className="eyebrow">Рабочее пространство</p><h1>Кабинет администратора</h1><p>Контакты для клиентов и входящие технические задания.</p></div><button type="button" className="secondary-button header-action" onClick={onClose}>Вернуться к конструктору</button></header>
     <div className="admin-grid">
       <form className="panel admin-settings" onSubmit={save}><h2>Контакты и доставка</h2>
-        <label className="field"><span>Ключ администратора</span><input type="password" required value={key} onChange={(e) => setKey(e.target.value)} /></label>
+        {!adminToken && <label className="field"><span>Ключ администратора</span><input type="password" required value={key} onChange={(e) => setKey(e.target.value)} /></label>}
+        {adminToken && <div className="admin-authenticated">Вы вошли как администратор</div>}
         <label className="field"><span>Email</span><input type="email" value={settings.email} onChange={(e) => setSettings({ ...settings, email: e.target.value })} /></label>
         <label className="field"><span>Телефон</span><input type="tel" value={settings.phone} onChange={(e) => setSettings({ ...settings, phone: e.target.value })} /></label>
         <label className="field"><span>Telegram</span><input placeholder="@username" value={settings.telegram} onChange={(e) => setSettings({ ...settings, telegram: e.target.value })} /></label>
@@ -33,7 +39,7 @@ export default function AdminPanel({ onClose }) {
         <button className="primary-button" type="submit">Сохранить и войти</button>{message && <div className="account-message">{message}</div>}
       </form>
       <section className="panel admin-briefs"><div className="section-heading"><h2>Технические задания</h2><button type="button" className="secondary-button" onClick={load}>Обновить</button></div>
-        {!briefs.length ? <p>После входа здесь появятся заявки клиентов.</p> : briefs.map((brief) => <article key={brief.id} className="brief-card"><div><strong>№{brief.id} · {brief.customer.name}</strong><time>{new Date(brief.created_at).toLocaleString('ru-RU')}</time></div><p>{brief.customer.phone} · {brief.customer.email}</p><p>{brief.message || 'Без комментария'}</p><small>{brief.configuration.height_cm} × {brief.configuration.ramp_length_cm} × {brief.configuration.width_cm} см · {brief.requested_channels.join(', ')}</small></article>)}
+        {!briefs.length ? <p>После входа здесь появятся заявки клиентов.</p> : briefs.map((brief) => <article key={brief.id} className="brief-card"><div><strong>№{brief.id} · {brief.customer.name}</strong><time>{new Date(brief.created_at).toLocaleString('ru-RU')}</time></div><p>{[brief.customer.phone, brief.customer.email].filter(Boolean).join(' · ')}</p><p>{brief.message || 'Без комментария'}</p><small>{brief.configuration.height_cm} × {brief.configuration.ramp_length_cm} × {brief.configuration.width_cm} см · {brief.requested_channels.join(', ')}</small></article>)}
       </section>
     </div>
   </main>

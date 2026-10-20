@@ -10,6 +10,7 @@ SUPPORT_FOLD_DIRECTION = "inward"
 SUPPORT_DEPLOYED_STATE = "deployed"
 SUPPORT_HINGE_COUNT = 2
 STEP_WIDTH_CM = 3.0
+STEP_HEIGHT_CM = 0.8
 
 
 class RampGeometryError(ValueError):

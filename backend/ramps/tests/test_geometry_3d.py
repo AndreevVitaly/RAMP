@@ -1,4 +1,4 @@
-from math import dist
+from math import cos, dist, radians, sin
 
 from django.test import SimpleTestCase
 
@@ -19,7 +19,10 @@ class RampGeometry3DTests(SimpleTestCase):
             self.assertEqual(corner["z"], 0)
 
     def test_steps_cross_entire_width(self):
-        model = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)["geometry_3d"]
+        result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40)
+        model = result["geometry_3d"]
+        self.assertEqual(result["step_width_cm"], 3)
+        self.assertEqual(result["step_height_cm"], 0.8)
         for step in model["steps"]:
             with self.subTest(step=step):
                 self.assertEqual(step["start_left"]["x"], step["start_right"]["x"])
@@ -27,6 +30,19 @@ class RampGeometry3DTests(SimpleTestCase):
                 self.assertEqual(step["start_right"]["y"] - step["start_left"]["y"], 40)
                 self.assertEqual(step["end_right"]["y"] - step["end_left"]["y"], 40)
                 self.assertEqual(step["end_distance_cm"] - step["start_distance_cm"], 3)
+                self.assertEqual(step["height_cm"], 0.8)
+                self.assertEqual(step["top_start_right"]["y"] - step["top_start_left"]["y"], 40)
+                self.assertAlmostEqual(
+                    dist(step["start_left"].values(), step["top_start_left"].values()), 0.8, places=3
+                )
+                self.assertAlmostEqual(
+                    step["top_start_left"]["x"] - step["start_left"]["x"],
+                    -0.8 * sin(radians(result["angle_deg"])), places=3,
+                )
+                self.assertAlmostEqual(
+                    step["top_start_left"]["z"] - step["start_left"]["z"],
+                    0.8 * cos(radians(result["angle_deg"])), places=3,
+                )
 
     def test_disabled_slats_are_absent_from_unified_3d_model(self):
         result = calculate_ramp_configuration(height_cm=50, ramp_length_cm=100, width_cm=40, has_slats=False)
