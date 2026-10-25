@@ -10,7 +10,9 @@ Backend рассчитывает боковой профиль, простран
 
 ## Запуск backend
 
-Требуется Python 3.11+ и PostgreSQL. Для быстрого локального запуска без PostgreSQL можно явно выбрать SQLite.
+Для размещения на виртуальном Timeweb см. [инструкцию по Timeweb](docs/TIMEWEB.md); общие production-проверки описаны в [инструкции по публикации](docs/DEPLOYMENT.md).
+
+Требуется Python 3.10+ и PostgreSQL. Для быстрого локального запуска без PostgreSQL можно явно выбрать SQLite.
 
 ```powershell
 cd backend

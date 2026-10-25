@@ -1,0 +1,5 @@
+Options +ExecCGI -Indexes
+AddHandler wsgi-script .py
+DirectoryIndex index.html
+RewriteEngine On
+RewriteRule ^(api/.*|admin/.*)$ /wsgi.py/$1 [QSA,PT,L]
