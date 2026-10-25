@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -8,6 +9,15 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-development-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = [x.strip() for x in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if x.strip()]
+if not DEBUG and (SECRET_KEY == "unsafe-development-key" or len(SECRET_KEY) < 50):
+    raise ImproperlyConfigured("Set a unique DJANGO_SECRET_KEY of at least 50 characters before production startup.")
+CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if x.strip()]
+SECURE_SSL_REDIRECT = not DEBUG and os.getenv("DJANGO_SECURE_SSL_REDIRECT", "true").lower() == "true"
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "3600")) if not DEBUG else 0
+if os.getenv("DJANGO_TRUST_PROXY_HTTPS", "false").lower() == "true":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -61,19 +71,20 @@ TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_CODE_COOLDOWN_SECONDS = int(os.getenv("EMAIL_CODE_COOLDOWN_SECONDS", "60"))
+EMAIL_CODE_EMAIL_HOURLY_LIMIT = int(os.getenv("EMAIL_CODE_EMAIL_HOURLY_LIMIT", "5"))
+EMAIL_CODE_IP_HOURLY_LIMIT = int(os.getenv("EMAIL_CODE_IP_HOURLY_LIMIT", "20"))
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "avdeevvitaly45@gmail.com")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "RAMP <avdeevvitaly45@gmail.com>")
-RAMP_ADMIN_KEY = os.getenv("RAMP_ADMIN_KEY", "admin-development-key")
-RAMP_ADMIN_USERNAME = os.getenv("RAMP_ADMIN_USERNAME", "admin")
-RAMP_ADMIN_PASSWORD = os.getenv("RAMP_ADMIN_PASSWORD", "admin")
 SMS_PROVIDER_URL = os.getenv("SMS_PROVIDER_URL", "")
 SMS_API_KEY = os.getenv("SMS_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")

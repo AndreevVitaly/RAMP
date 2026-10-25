@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { deleteRampImage, listRampImages, updateRampImage, uploadRampImage } from './api'
 import { MATERIALS } from './materials'
+import { ADMIN_TOKEN_KEY } from './accessSession'
 
 const IMAGE_TYPES = {
   product: 'Главный вид изделия', sofa: 'Пандус возле дивана', bed: 'Пандус возле кровати',
@@ -14,6 +15,7 @@ export default function ImageGallery({ kind, configuration }) {
   const [message, setMessage] = useState('')
   const [fields, setFields] = useState({ title: '', caption: '', description: '', image_type: 'product' })
   const isIllustration = kind === 'illustration'
+  const adminToken = sessionStorage.getItem(ADMIN_TOKEN_KEY)
 
   async function refresh() { setItems(await listRampImages(kind)) }
   useEffect(() => { refresh().catch((error) => setMessage(error.message)) }, [kind])
@@ -37,15 +39,15 @@ export default function ImageGallery({ kind, configuration }) {
     data.append('color', configuration.color); data.append('has_slats', configuration.has_slats)
     data.append('side_rails', configuration.side_rails); data.append('configuration', JSON.stringify(configSnapshot))
     try {
-      await uploadRampImage(data); setFile(null); setFields({ title: '', caption: '', description: '', image_type: 'product' }); setMessage('Изображение сохранено.'); await refresh()
+      await uploadRampImage(data, adminToken); setFile(null); setFields({ title: '', caption: '', description: '', image_type: 'product' }); setMessage('Изображение сохранено.'); await refresh()
     } catch (error) { setMessage(error.message) }
   }
 
-  async function remove(id) { await deleteRampImage(id); await refresh() }
-  async function makePrimary(id) { await updateRampImage(id, { is_primary: true }); await refresh() }
+  async function remove(id) { await deleteRampImage(id, adminToken); await refresh() }
+  async function makePrimary(id) { await updateRampImage(id, { is_primary: true }, adminToken); await refresh() }
 
   return <div className="gallery-workspace">
-    <form className="image-upload" onSubmit={submit}>
+    {adminToken && <form className="image-upload" onSubmit={submit}>
       <label className="field"><span>Файл JPG, PNG или WebP</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files[0] || null)} /></label>
       {preview && <img className="upload-preview" src={preview} alt="Предварительный просмотр" />}
       {isIllustration && <label className="field"><span>Название</span><input value={fields.title} onChange={(event) => setFields({ ...fields, title: event.target.value })} /></label>}
@@ -55,13 +57,13 @@ export default function ImageGallery({ kind, configuration }) {
       <small>Привязка: {MATERIALS[configuration.color]?.label}, рейки — {configuration.has_slats ? 'есть' : 'нет'}, бортики — {configuration.side_rails ? 'есть' : 'нет'}.</small>
       <button className="primary-button" type="submit" disabled={!file}>Загрузить</button>
       {message && <p className="gallery-message">{message}</p>}
-    </form>
+    </form>}
     <div className="image-gallery">
       {items.length === 0 && <p>Изображений пока нет.</p>}
       {items.map((item) => <article key={item.id} className={`gallery-item ${item.is_primary ? 'primary' : ''}`}>
         <img src={item.file} alt={item.title || item.caption || 'Изображение пандуса'} />
         <div><strong>{item.title || item.caption || item.original_name}</strong>{item.is_illustration && <span className="illustration-badge">Иллюстрация</span>}<small>{MATERIALS[item.color]?.label || 'Цвет не указан'} · {item.has_slats ? 'с рейками' : 'без реек'} · {item.side_rails ? 'с бортиками' : 'без бортиков'}</small><small>{item.configuration?.height_cm ? `${item.configuration.height_cm} × ${item.configuration.ramp_length_cm} × ${item.configuration.width_cm} см` : 'Точные размеры не привязаны'}</small></div>
-        <div className="gallery-actions"><button type="button" onClick={() => makePrimary(item.id)} disabled={item.is_primary}>{item.is_primary ? 'Главное' : 'Сделать главным'}</button><button type="button" onClick={() => remove(item.id)}>Удалить</button></div>
+        {adminToken && <div className="gallery-actions"><button type="button" onClick={() => makePrimary(item.id)} disabled={item.is_primary}>{item.is_primary ? 'Главное' : 'Сделать главным'}</button><button type="button" onClick={() => remove(item.id)}>Удалить</button></div>}
       </article>)}
     </div>
   </div>

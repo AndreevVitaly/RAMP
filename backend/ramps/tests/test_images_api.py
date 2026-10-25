@@ -4,11 +4,13 @@ import tempfile
 from pathlib import Path
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from ramps.models import RampImage
+from ramps.accounts import issue_admin_token
 
 
 class RampImageApiTests(APITestCase):
@@ -16,6 +18,8 @@ class RampImageApiTests(APITestCase):
         self.media_root = tempfile.mkdtemp(dir=Path(__file__).resolve().parents[2])
         self.override = override_settings(MEDIA_ROOT=self.media_root)
         self.override.enable()
+        self.admin = get_user_model().objects.create_superuser("image-admin", "admin@example.com", "test-password")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {issue_admin_token(self.admin)}")
 
     def tearDown(self):
         self.override.disable()
@@ -69,4 +73,15 @@ class RampImageApiTests(APITestCase):
             format="multipart",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_visitors_can_view_but_cannot_change_images(self):
+        uploaded = self.upload()
+        image_id = uploaded.data["id"]
+        self.client.credentials()
+        self.assertEqual(self.client.get("/api/ramp/images/").status_code, 200)
+        self.assertEqual(self.client.get(f"/api/ramp/images/{image_id}/").status_code, 200)
+        self.assertEqual(self.upload().status_code, 403)
+        self.assertEqual(self.client.patch(f"/api/ramp/images/{image_id}/", {"title": "changed"}, format="json").status_code, 403)
+        self.assertEqual(self.client.delete(f"/api/ramp/images/{image_id}/").status_code, 403)
+        self.assertTrue(RampImage.objects.filter(pk=image_id).exists())
 

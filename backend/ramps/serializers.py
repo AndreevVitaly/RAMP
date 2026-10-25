@@ -4,7 +4,7 @@ from pathlib import Path
 
 from rest_framework import serializers
 
-from .models import AdminContactSettings, Customer, RampImage, TechnicalBrief
+from .models import AdminContactSettings, Customer, RampImage, SavedProject, TechnicalBrief
 from .services import (
     ALLOWED_COLORS,
     DEFAULT_COLOR,
@@ -42,6 +42,8 @@ class RampImageSerializer(serializers.ModelSerializer):
     def validate_file(self, value):
         allowed_extensions = {".jpg", ".jpeg", ".png", ".webp"}
         allowed_types = {"image/jpeg", "image/png", "image/webp"}
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("Размер изображения не должен превышать 10 МБ.")
         if Path(value.name).suffix.lower() not in allowed_extensions or value.content_type not in allowed_types:
             raise serializers.ValidationError("Поддерживаются только JPG, PNG и WebP.")
         return value
@@ -82,6 +84,50 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = ("id", "name", "email", "phone", "email_verified", "created_at")
+        read_only_fields = fields
+
+
+class SavedProjectSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+
+    class Meta:
+        model = SavedProject
+        fields = ("id", "name", "configuration", "created_at", "updated_at")
+        read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_configuration(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Передайте параметры изделия.")
+        product = {key: value[key] for key in RampCalculationSerializer().fields if key in value}
+        calculation = RampCalculationSerializer(data=product)
+        calculation.is_valid(raise_exception=True)
+        from .services import RampGeometryError, calculate_ramp_configuration
+
+        try:
+            result = calculate_ramp_configuration(**calculation.validated_data)
+        except RampGeometryError as error:
+            raise serializers.ValidationError(str(error)) from error
+
+        pet = value.get("pet")
+        if pet is not None:
+            breeds = {"dachshund", "corgi", "pomeranian", "beagle", "french_bulldog", "labrador", "german_shepherd"}
+            if not isinstance(pet, dict) or pet.get("breed") not in breeds or not isinstance(pet.get("enabled"), bool):
+                raise serializers.ValidationError("Укажите доступную породу питомца.")
+        return {**calculation.validated_data, "ramp_length_cm": result["ramp_length_cm"], **({"pet": {"breed": pet["breed"], "enabled": pet["enabled"]}} if pet else {})}
+
+    def create(self, validated_data):
+        if not validated_data.get("name"):
+            configuration = validated_data["configuration"]
+            validated_data["name"] = f"Пандус {configuration['height_cm']:g} × {configuration['ramp_length_cm']:g} см"
+        return super().create(validated_data)
+
+
+class AdminSavedProjectSerializer(serializers.ModelSerializer):
+    customer = CustomerSerializer(read_only=True)
+
+    class Meta:
+        model = SavedProject
+        fields = ("id", "name", "customer", "configuration", "created_at", "updated_at")
         read_only_fields = fields
 
 

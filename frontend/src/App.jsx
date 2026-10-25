@@ -5,6 +5,7 @@ import ImageStudio from './ImageStudio'
 import { PET_BREEDS, petPreset } from './pets'
 import AccountPanel from './AccountPanel'
 import AdminPanel from './AdminPanel'
+import { ADMIN_TOKEN_KEY, CUSTOMER_TOKEN_KEY } from './accessSession'
 
 const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, support_panel_width_cm: 20, color: 'dark_gray', has_slats: true, side_rails: false, product_state: 'deployed' }
 
@@ -14,7 +15,7 @@ function NumberField({ label, name, value, onChange, hint, min = 0 }) {
 
 const rubles = (value) => new Intl.NumberFormat('ru-RU').format(value) + ' ₽'
 
-export default function App() {
+export default function App({ onSwitchUser }) {
   const [form, setForm] = useState(initialForm)
   const [lengthEdited, setLengthEdited] = useState(false)
   const [result, setResult] = useState(null)
@@ -22,6 +23,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [pet, setPet] = useState({ enabled: false, ...petPreset('dachshund') })
   const [screen, setScreen] = useState('calculator')
+  const [adminPreview, setAdminPreview] = useState(null)
 
   function updatePet(event) {
     const { name, value, checked, type } = event.target
@@ -49,6 +51,24 @@ export default function App() {
     setLengthEdited(false)
   }
 
+  function loadProject(configuration) {
+    const { pet: savedPet, ...product } = configuration
+    const breed = savedPet?.breed && PET_BREEDS[savedPet.breed] ? savedPet.breed : 'dachshund'
+    setForm({ ...initialForm, ...product })
+    setPet({ enabled: Boolean(savedPet?.enabled), ...petPreset(breed) })
+    setLengthEdited(true)
+    setLoading(true)
+    setResult(null)
+    document.querySelector('.form-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function openClientConfiguration(item) {
+    loadProject(item.configuration)
+    setAdminPreview(item)
+    setScreen('calculator')
+    window.scrollTo(0, 0)
+  }
+
   useEffect(() => {
     const controller = new AbortController()
     const timeout = setTimeout(async () => {
@@ -65,10 +85,11 @@ export default function App() {
     return () => { clearTimeout(timeout); controller.abort() }
   }, [form, lengthEdited])
 
-  if (screen === 'admin') return <AdminPanel onClose={() => setScreen('calculator')} />
+  if (screen === 'admin') return <AdminPanel onClose={() => { setAdminPreview(null); setScreen('calculator') }} onSwitchUser={onSwitchUser} onOpenConfiguration={openClientConfiguration} />
 
   return <main>
-    <header><div className="brand">RAMP</div><div><p className="eyebrow">Конструктор пандусов для собак</p><h1>Рассчитайте удобный подъём</h1><p>Задайте размеры — мы рассчитаем геометрию и расположение поперечных реек.</p></div><button type="button" className="secondary-button header-action" onClick={() => setScreen('admin')}>Кабинет администратора</button></header>
+    <header><div className="brand">RAMP</div><div><p className="eyebrow">Конструктор пандусов для собак</p><h1>Рассчитайте удобный подъём</h1><p>Задайте размеры — мы рассчитаем геометрию и расположение поперечных реек.</p></div><div className="header-actions">{sessionStorage.getItem(ADMIN_TOKEN_KEY) && <button type="button" className="secondary-button" onClick={() => setScreen('admin')}>Кабинет администратора</button>}{!sessionStorage.getItem(ADMIN_TOKEN_KEY) && localStorage.getItem(CUSTOMER_TOKEN_KEY) && <button type="button" className="secondary-button" onClick={() => document.getElementById('customer-account')?.scrollIntoView({ behavior: 'smooth' })}>Личный кабинет</button>}<button type="button" className="secondary-button" onClick={onSwitchUser}>Сменить пользователя</button></div></header>
+    {adminPreview && <section className="admin-preview-banner"><div><strong>Просмотр: {adminPreview.name}</strong><p>{adminPreview.customer.name} · {adminPreview.customer.email} · {adminPreview.kind === 'project' ? 'сохранённый проект' : 'отправленное техническое задание'}. Изменения в этом конструкторе не меняют запись клиента.</p></div><button type="button" className="secondary-button" onClick={() => { setAdminPreview(null); setScreen('admin') }}>Вернуться к списку</button></section>}
     <div className="workspace">
       <section className="panel form-panel">
         <h2>Параметры</h2>
@@ -125,8 +146,8 @@ export default function App() {
             {result.has_slats && <div className="wide"><dt>Положения реек</dt><dd>{result.step_positions_cm.join(', ')} см</dd></div>}
           </dl></div>
           <ImageStudio ramp={result} configuration={form} pet={pet} />
-          <AccountPanel configuration={{ ...form, pet }} result={result} />
         </>}
+        {!adminPreview && <AccountPanel configuration={{ ...form, pet }} result={result} busy={loading} onLoadProject={loadProject} onSwitchUser={onSwitchUser} />}
       </section>
     </div>
   </main>

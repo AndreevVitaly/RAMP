@@ -5,6 +5,7 @@ import urllib.request
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.utils import timezone
@@ -46,20 +47,20 @@ def issue_session(customer):
     return token
 
 
-def issue_admin_token():
-    return TimestampSigner(salt=ADMIN_TOKEN_SALT).sign(settings.RAMP_ADMIN_USERNAME)
+def issue_admin_token(user):
+    return TimestampSigner(salt=ADMIN_TOKEN_SALT).sign(f"{user.pk}:{user.get_session_auth_hash()}")
 
 
 def admin_authorized(request):
-    if request.headers.get("X-Admin-Key") == settings.RAMP_ADMIN_KEY:
-        return True
     header = request.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
         return False
     try:
-        username = TimestampSigner(salt=ADMIN_TOKEN_SALT).unsign(header[7:], max_age=60 * 60 * 12)
-        return username == settings.RAMP_ADMIN_USERNAME
-    except (BadSignature, SignatureExpired):
+        value = TimestampSigner(salt=ADMIN_TOKEN_SALT).unsign(header[7:], max_age=60 * 60 * 12)
+        user_id, password_hash = value.split(":", 1)
+        user = get_user_model().objects.filter(pk=user_id, is_active=True, is_staff=True).first()
+        return bool(user and secrets.compare_digest(password_hash, user.get_session_auth_hash()))
+    except (BadSignature, SignatureExpired, ValueError):
         return False
 
 

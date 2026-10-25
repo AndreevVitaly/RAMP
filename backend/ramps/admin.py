@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AdminContactSettings, Customer, RampImage, TechnicalBrief
+from .models import AdminContactSettings, Customer, RampImage, SavedProject, TechnicalBrief
 
 
 admin.site.site_header = "RAMP — администрирование"
@@ -42,6 +42,14 @@ class CustomerAdmin(ReadOnlyAdmin):
 class TechnicalBriefAdmin(ReadOnlyAdmin):
     list_display = ("id", "customer", "created_at", "requested_channels", "delivery_status")
     search_fields = ("customer__name", "customer__email", "message")
+    list_select_related = ("customer",)
+    list_filter = ("created_at",)
+
+
+@admin.register(SavedProject)
+class SavedProjectAdmin(ReadOnlyAdmin):
+    list_display = ("id", "name", "customer", "updated_at")
+    search_fields = ("name", "customer__name", "customer__email")
     list_select_related = ("customer",)
     list_filter = ("created_at",)
 

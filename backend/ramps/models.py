@@ -78,13 +78,24 @@ class Customer(models.Model):
 
 
 class PhoneVerification(models.Model):
+    REGISTRATION = "registration"
+    LOGIN = "login"
+    PURPOSE_CHOICES = ((REGISTRATION, "Регистрация"), (LOGIN, "Вход"))
+
     phone = models.CharField(max_length=30, db_index=True)
     name = models.CharField(max_length=120)
     email = models.EmailField()
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, default=REGISTRATION)
     code_digest = models.CharField(max_length=64)
     expires_at = models.DateTimeField()
     attempts = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class EmailCodeRequest(models.Model):
+    email_digest = models.CharField(max_length=64, db_index=True)
+    ip_digest = models.CharField(max_length=64, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
 
 class CustomerSession(models.Model):
@@ -92,6 +103,22 @@ class CustomerSession(models.Model):
     token_digest = models.CharField(max_length=64, unique=True)
     expires_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class SavedProject(models.Model):
+    customer = models.ForeignKey(Customer, verbose_name="Клиент", on_delete=models.CASCADE, related_name="saved_projects")
+    name = models.CharField("Название", max_length=120)
+    configuration = models.JSONField("Параметры изделия", default=dict)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+    updated_at = models.DateTimeField("Обновлён", auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        verbose_name = "Сохранённый проект"
+        verbose_name_plural = "Сохранённые проекты"
+
+    def __str__(self):
+        return self.name
 
 
 class TechnicalBrief(models.Model):

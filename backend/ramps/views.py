@@ -4,6 +4,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
@@ -12,8 +13,9 @@ from datetime import timedelta
 import secrets
 
 from .accounts import admin_authorized, customer_from_request, deliver_brief, digest, issue_admin_token, issue_session, normalize_phone
-from .models import AdminContactSettings, Customer, PhoneVerification, RampImage, TechnicalBrief
-from .serializers import AdminContactSettingsSerializer, CustomerSerializer, RampCalculationSerializer, RampImageSerializer, TechnicalBriefSerializer
+from .models import AdminContactSettings, Customer, PhoneVerification, RampImage, SavedProject, TechnicalBrief
+from .rate_limit import allow_email_code_request
+from .serializers import AdminContactSettingsSerializer, AdminSavedProjectSerializer, CustomerSerializer, RampCalculationSerializer, RampImageSerializer, SavedProjectSerializer, TechnicalBriefSerializer
 from .services import RampGeometryError, calculate_ramp_configuration
 
 
@@ -33,6 +35,11 @@ class RampImageListCreateView(ListCreateAPIView):
     serializer_class = RampImageSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
+    def create(self, request, *args, **kwargs):
+        if not admin_authorized(request):
+            return Response({"detail": "Требуется вход администратора."}, status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
     def get_queryset(self):
         queryset = super().get_queryset()
         kind = self.request.query_params.get("kind")
@@ -44,6 +51,16 @@ class RampImageDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = RampImageSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
+    def update(self, request, *args, **kwargs):
+        if not admin_authorized(request):
+            return Response({"detail": "Требуется вход администратора."}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        if not admin_authorized(request):
+            return Response({"detail": "Требуется вход администратора."}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
+
     def perform_destroy(self, instance):
         storage, name = instance.file.storage, instance.file.name
         instance.delete()
@@ -53,7 +70,7 @@ class RampImageDetailView(RetrieveUpdateDestroyAPIView):
 class RequestEmailCodeView(APIView):
     def post(self, request):
         name = str(request.data.get("name", "")).strip()
-        email = str(request.data.get("email", "")).strip()
+        email = str(request.data.get("email", "")).strip().lower()
         supplied_phone = str(request.data.get("phone") or "").strip()
         try:
             phone = normalize_phone(supplied_phone) if supplied_phone else ""
@@ -61,9 +78,13 @@ class RequestEmailCodeView(APIView):
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         if not name or "@" not in email:
             return Response({"detail": "Укажите имя и корректную электронную почту."}, status=status.HTTP_400_BAD_REQUEST)
+        if not settings.DEBUG and settings.EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend":
+            return Response({"detail": "Отправка почты пока не настроена."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        if not allow_email_code_request(request, email):
+            return Response({"detail": "Слишком много запросов кода. Подождите и попробуйте позже."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
         code = f"{secrets.randbelow(1_000_000):06d}"
         PhoneVerification.objects.filter(email__iexact=email).delete()
-        PhoneVerification.objects.create(phone=phone, name=name, email=email, code_digest=digest(code), expires_at=timezone.now() + timedelta(minutes=10))
+        PhoneVerification.objects.create(phone=phone, name=name, email=email, purpose=PhoneVerification.REGISTRATION, code_digest=digest(code), expires_at=timezone.now() + timedelta(minutes=10))
         try:
             send_mail("Код регистрации RAMP", f"Ваш код подтверждения: {code}\n\nКод действует 10 минут.", settings.DEFAULT_FROM_EMAIL, [email])
             delivered = True
@@ -77,6 +98,39 @@ class RequestEmailCodeView(APIView):
         return Response(payload)
 
 
+class RequestLoginCodeView(APIView):
+    def post(self, request):
+        email = str(request.data.get("email", "")).strip().lower()
+        if "@" not in email:
+            return Response({"detail": "Укажите корректную электронную почту."}, status=status.HTTP_400_BAD_REQUEST)
+        if not settings.DEBUG and settings.EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend":
+            return Response({"detail": "Отправка почты пока не настроена."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        if not allow_email_code_request(request, email):
+            return Response({"detail": "Слишком много запросов кода. Подождите и попробуйте позже."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        message = "Если этот адрес зарегистрирован, код входа отправлен на электронную почту."
+        customer = Customer.objects.filter(email__iexact=email, email_verified=True).first()
+        if not customer:
+            return Response({"detail": message})
+
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        PhoneVerification.objects.filter(email__iexact=email).delete()
+        PhoneVerification.objects.create(
+            phone="", name=customer.name, email=customer.email, purpose=PhoneVerification.LOGIN,
+            code_digest=digest(code), expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        try:
+            send_mail("Код входа RAMP", f"Ваш код входа: {code}\n\nКод действует 10 минут.", settings.DEFAULT_FROM_EMAIL, [customer.email])
+            delivered = True
+        except Exception:
+            delivered = False
+        if not delivered and not settings.DEBUG:
+            return Response({"detail": "Сервис отправки почты пока не настроен."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        payload = {"detail": message}
+        if settings.DEBUG:
+            payload["dev_code"] = code
+        return Response(payload)
+
+
 class VerifyEmailCodeView(APIView):
     def post(self, request):
         email = str(request.data.get("email", "")).strip()
@@ -87,6 +141,11 @@ class VerifyEmailCodeView(APIView):
                 challenge.save(update_fields=("attempts",))
             return Response({"detail": "Неверный или просроченный код."}, status=status.HTTP_400_BAD_REQUEST)
         customer = Customer.objects.filter(email__iexact=challenge.email).first()
+        if challenge.purpose == PhoneVerification.LOGIN:
+            if not customer or not customer.email_verified:
+                return Response({"detail": "Аккаунт не найден. Зарегистрируйтесь заново."}, status=status.HTTP_400_BAD_REQUEST)
+            challenge.delete()
+            return Response({"token": issue_session(customer), "customer": CustomerSerializer(customer).data})
         if challenge.phone and Customer.objects.filter(phone=challenge.phone).exclude(pk=customer.pk if customer else None).exists():
             return Response({"detail": "Этот телефон уже указан в другом аккаунте. Измените данные регистрации."}, status=status.HTTP_400_BAD_REQUEST)
         if customer:
@@ -104,6 +163,19 @@ class VerifyEmailCodeView(APIView):
 class CustomerAccountView(APIView):
     def get(self, request):
         return Response(CustomerSerializer(customer_from_request(request)).data)
+
+
+class SavedProjectListCreateView(APIView):
+    def get(self, request):
+        customer = customer_from_request(request)
+        return Response(SavedProjectSerializer(customer.saved_projects.all(), many=True).data)
+
+    def post(self, request):
+        customer = customer_from_request(request)
+        serializer = SavedProjectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        project = serializer.save(customer=customer)
+        return Response(SavedProjectSerializer(project).data, status=status.HTTP_201_CREATED)
 
 
 class TechnicalBriefListCreateView(APIView):
@@ -205,11 +277,20 @@ class AdminBriefListView(APIView):
         return Response(TechnicalBriefSerializer(TechnicalBrief.objects.select_related("customer").all(), many=True).data)
 
 
+class AdminSavedProjectListView(APIView):
+    def get(self, request):
+        if not admin_authorized(request):
+            return Response({"detail": "Требуется вход администратора."}, status=status.HTTP_403_FORBIDDEN)
+        projects = SavedProject.objects.select_related("customer").all()
+        return Response(AdminSavedProjectSerializer(projects, many=True).data)
+
+
 class AdminLoginView(APIView):
     def post(self, request):
         username = str(request.data.get("username", ""))
         password = str(request.data.get("password", ""))
-        if not secrets.compare_digest(username, settings.RAMP_ADMIN_USERNAME) or not secrets.compare_digest(password, settings.RAMP_ADMIN_PASSWORD):
+        user = authenticate(request=request, username=username, password=password)
+        if not user or not user.is_active or not user.is_staff:
             return Response({"detail": "Неверный логин или пароль."}, status=status.HTTP_403_FORBIDDEN)
-        return Response({"token": issue_admin_token(), "expires_in_hours": 12})
+        return Response({"token": issue_admin_token(user), "expires_in_hours": 12})
 
