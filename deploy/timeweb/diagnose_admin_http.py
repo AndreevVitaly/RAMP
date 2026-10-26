@@ -47,7 +47,8 @@ def main(domain):
     response, elapsed = request(opener, urllib.request.Request(url, data=data, headers={"Referer": url}))
     print(f"POST login: HTTP {response.code}, {elapsed:.2f} s, redirect {response.headers.get('Location', '-')}")
 
-    if response.code in (301, 302, 303):
+    success_page = response.code == 200 and b"RAMP_LOGIN_OK" in response.read()
+    if response.code in (301, 302, 303) or success_page:
         response, elapsed = request(opener, urllib.request.Request(f"https://{domain}/admin/"))
         print(f"GET admin: HTTP {response.code}, {elapsed:.2f} s")
 

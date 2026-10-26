@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+from html import escape
 from pathlib import Path
 
 
@@ -39,6 +40,7 @@ def application(environ, start_response):
 
     trace_file = backend_dir / "wsgi-trace.log"
     started = time.monotonic()
+    login_page = None
 
     def record(event):
         elapsed = time.monotonic() - started
@@ -47,10 +49,21 @@ def application(environ, start_response):
             target.write(f"{elapsed:.3f}s {event}\n")
 
     def traced_start_response(status, headers, exc_info=None):
+        nonlocal login_page
         record(f"response {status}")
         if status.startswith("302 "):
-            status = "303 See Other"
-            record("changed redirect to 303")
+            destination = next((value for name, value in headers if name.lower() == "location"), "/admin/")
+            safe_destination = escape(destination, quote=True)
+            login_page = (
+                '<!doctype html><html lang="ru"><meta charset="utf-8">'
+                f'<meta http-equiv="refresh" content="0;url={safe_destination}">'
+                '<title>Login complete</title><p>Login complete. '
+                f'<a href="{safe_destination}">Open admin</a></p><!-- RAMP_LOGIN_OK -->'
+            ).encode("utf-8")
+            headers = [(name, value) for name, value in headers if name.lower() not in ("location", "content-length", "content-type")]
+            headers.extend((("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(login_page)))))
+            status = "200 OK"
+            record("changed redirect to HTML page")
         return start_response(status, headers, exc_info)
 
     record("request started")
@@ -60,4 +73,9 @@ def application(environ, start_response):
         record(f"exception {type(error).__name__}")
         raise
     record("application returned")
+    if login_page is not None:
+        if hasattr(result, "close"):
+            result.close()
+        record("redirect response closed; returning HTML")
+        return [login_page]
     return result
