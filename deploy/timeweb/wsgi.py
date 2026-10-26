@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 from pathlib import Path
 
 
@@ -27,4 +28,33 @@ if os.getenv("USE_SQLITE", "false").lower() == "true":
 
 from django.core.wsgi import get_wsgi_application
 
-application = get_wsgi_application()
+django_application = get_wsgi_application()
+
+
+def application(environ, start_response):
+    if os.getenv("RAMP_WSGI_TRACE", "false").lower() != "true" or not (
+        environ.get("REQUEST_METHOD") == "POST" and "/admin/login/" in environ.get("PATH_INFO", "")
+    ):
+        return django_application(environ, start_response)
+
+    trace_file = backend_dir / "wsgi-trace.log"
+    started = time.monotonic()
+
+    def record(event):
+        elapsed = time.monotonic() - started
+        descriptor = os.open(trace_file, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        with os.fdopen(descriptor, "a", encoding="utf-8") as target:
+            target.write(f"{elapsed:.3f}s {event}\n")
+
+    def traced_start_response(status, headers, exc_info=None):
+        record(f"response {status}")
+        return start_response(status, headers, exc_info)
+
+    record("request started")
+    try:
+        result = django_application(environ, traced_start_response)
+    except Exception as error:
+        record(f"exception {type(error).__name__}")
+        raise
+    record("application returned")
+    return result
