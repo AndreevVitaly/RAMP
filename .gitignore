@@ -1,4 +1,5 @@
 .env
+.admin-initial-password
 .venv/
 __pycache__/
 *.py[cod]
