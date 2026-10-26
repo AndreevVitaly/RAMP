@@ -66,6 +66,11 @@ else:
         }
     }
 
+if os.getenv("DJANGO_FILE_SESSIONS", "false").lower() == "true":
+    SESSION_ENGINE = "django.contrib.sessions.backends.file"
+    SESSION_FILE_PATH = BASE_DIR / "sessions"
+    SESSION_FILE_PATH.mkdir(mode=0o700, exist_ok=True)
+
 LANGUAGE_CODE = "ru-ru"
 TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
