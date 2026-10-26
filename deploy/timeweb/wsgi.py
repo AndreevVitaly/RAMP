@@ -15,6 +15,16 @@ backend_dir = site_dir / "ramp" / "backend"
 sys.path.insert(0, str(backend_dir))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
+# Timeweb's Python 3.10 mod_wsgi can stall on the standard sqlite3 module.
+# Load the private configuration before Django so PostgreSQL deployments do
+# not require this Timeweb-specific SQLite replacement.
+from dotenv import load_dotenv
+
+load_dotenv(backend_dir / ".env")
+if os.getenv("USE_SQLITE", "false").lower() == "true":
+    __import__("pysqlite3")
+    sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+
 from django.core.wsgi import get_wsgi_application
 
 application = get_wsgi_application()
