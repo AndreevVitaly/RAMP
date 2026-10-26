@@ -74,8 +74,8 @@ def application(environ, start_response):
         raise
     record("application returned")
     if login_page is not None:
-        if hasattr(result, "close"):
-            result.close()
-        record("redirect response closed; returning HTML")
+        # Django's redirect response has an empty body. Calling close() here
+        # stalls under Timeweb's mod_wsgi, so return the replacement directly.
+        record("returning HTML response")
         return [login_page]
     return result
