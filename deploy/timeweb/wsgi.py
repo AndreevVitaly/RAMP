@@ -48,6 +48,9 @@ def application(environ, start_response):
 
     def traced_start_response(status, headers, exc_info=None):
         record(f"response {status}")
+        if status.startswith("302 "):
+            status = "303 See Other"
+            record("changed redirect to 303")
         return start_response(status, headers, exc_info)
 
     record("request started")
