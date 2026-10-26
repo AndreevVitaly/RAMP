@@ -103,8 +103,11 @@ input[type="submit"], .button, a.button { padding: 10px 16px; }
 #content-related .module h2 { color: #fff; }
 #nav-sidebar { border-radius: 0 18px 18px 0; }
 #nav-sidebar .module { border: 0; box-shadow: none; }
-.login #content { max-width: 500px; margin: 7vh auto 0; }
-.login #content-main { border-radius: 20px; background: #fff; padding: 28px; border: 1px solid #dedcd4; box-shadow: 0 18px 45px rgb(43 48 39 / 10%); }
+.login #container { width: min(500px, calc(100vw - 32px)); min-width: 0; box-sizing: border-box; }
+.login #content { width: 100%; max-width: none; box-sizing: border-box; padding: 24px; margin: 0; }
+.login #content-main { width: 100%; box-sizing: border-box; border-radius: 20px; background: #fff; padding: 28px; border: 1px solid #dedcd4; box-shadow: 0 18px 45px rgb(43 48 39 / 10%); }
+.login .form-row input { max-width: 100%; box-sizing: border-box; }
+.login .submit-row { box-sizing: border-box; }
 .login #header { justify-content: center; }
 
 @media (max-width: 767px) {
@@ -114,4 +117,6 @@ input[type="submit"], .button, a.button { padding: 10px 16px; }
     #content { padding: 22px 16px; }
     .dashboard #content-main, .dashboard #content-related { width: 100%; }
     .module, #content-related .module { border-radius: 14px; }
+    .login #content { padding: 16px; }
+    .login #content-main { padding: 20px; }
 }
