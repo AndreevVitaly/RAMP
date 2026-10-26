@@ -34,7 +34,7 @@ django_application = get_wsgi_application()
 
 def application(environ, start_response):
     if os.getenv("RAMP_WSGI_TRACE", "false").lower() != "true" or not (
-        environ.get("REQUEST_METHOD") == "POST" and "/admin/login/" in environ.get("PATH_INFO", "")
+        environ.get("REQUEST_METHOD") == "POST" and environ.get("PATH_INFO", "").startswith("/admin/")
     ):
         return django_application(environ, start_response)
 
@@ -57,8 +57,8 @@ def application(environ, start_response):
             login_page = (
                 '<!doctype html><html lang="ru"><meta charset="utf-8">'
                 f'<meta http-equiv="refresh" content="0;url={safe_destination}">'
-                '<title>Login complete</title><p>Login complete. '
-                f'<a href="{safe_destination}">Open admin</a></p><!-- RAMP_LOGIN_OK -->'
+                '<title>Changes saved</title><p>Changes saved. '
+                f'<a href="{safe_destination}">Continue</a></p><!-- RAMP_ADMIN_POST_OK -->'
             ).encode("utf-8")
             headers = [(name, value) for name, value in headers if name.lower() not in ("location", "content-length", "content-type")]
             headers.extend((("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(login_page)))))
