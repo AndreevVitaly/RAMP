@@ -28,20 +28,25 @@ async function parseResponse(response) {
   return body
 }
 
+function authHeaders(token) {
+  const value = `Bearer ${token}`
+  return { Authorization: value, 'X-RAMP-Authorization': value }
+}
+
 export async function listRampImages(kind) {
   return parseResponse(await fetch(`/api/ramp/images/?kind=${kind}`))
 }
 
 export async function uploadRampImage(formData, token) {
-  return parseResponse(await fetch('/api/ramp/images/', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData }))
+  return parseResponse(await fetch('/api/ramp/images/', { method: 'POST', headers: authHeaders(token), body: formData }))
 }
 
 export async function updateRampImage(id, fields, token) {
-  return parseResponse(await fetch(`/api/ramp/images/${id}/`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
+  return parseResponse(await fetch(`/api/ramp/images/${id}/`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
 export async function deleteRampImage(id, token) {
-  return parseResponse(await fetch(`/api/ramp/images/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }))
+  return parseResponse(await fetch(`/api/ramp/images/${id}/`, { method: 'DELETE', headers: authHeaders(token) }))
 }
 
 export async function requestEmailCode(fields) {
@@ -65,27 +70,27 @@ export async function verifyEmailCode(email, code) {
 }
 
 export async function getAccount(token, signal) {
-  return parseResponse(await fetch('/api/ramp/account/me/', { headers: { Authorization: `Bearer ${token}` }, signal }))
+  return parseResponse(await fetch('/api/ramp/account/me/', { headers: authHeaders(token), signal }))
 }
 
 export async function setCustomerPassword(token, fields) {
-  return parseResponse(await fetch('/api/ramp/account/password/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
+  return parseResponse(await fetch('/api/ramp/account/password/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
 export async function getSavedProjects(token) {
-  return parseResponse(await fetch('/api/ramp/account/projects/', { headers: { Authorization: `Bearer ${token}` } }))
+  return parseResponse(await fetch('/api/ramp/account/projects/', { headers: authHeaders(token) }))
 }
 
 export async function saveProject(token, fields) {
-  return parseResponse(await fetch('/api/ramp/account/projects/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
+  return parseResponse(await fetch('/api/ramp/account/projects/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
 export async function sendTechnicalBrief(token, fields) {
-  return parseResponse(await fetch('/api/ramp/account/briefs/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
+  return parseResponse(await fetch('/api/ramp/account/briefs/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
 export async function sendTechnicalBriefPdf(token, fields) {
-  return parseResponse(await fetch('/api/ramp/account/briefs/pdf/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
+  return parseResponse(await fetch('/api/ramp/account/briefs/pdf/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
 async function savePdfResponse(response, filename) {
@@ -103,14 +108,14 @@ async function savePdfResponse(response, filename) {
 }
 
 export async function downloadTechnicalBriefPdf(token, id) {
-  const response = await fetch(`/api/ramp/account/briefs/${id}/pdf/`, { headers: { Authorization: `Bearer ${token}` } })
+  const response = await fetch(`/api/ramp/account/briefs/${id}/pdf/`, { headers: authHeaders(token) })
   return savePdfResponse(response, `ramp-technical-brief-${id}.pdf`)
 }
 
 export async function downloadCurrentBriefPdf(token, fields) {
   const response = await fetch('/api/ramp/account/briefs/pdf/download/', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify(fields),
   })
   return savePdfResponse(response, 'ramp-technical-brief.pdf')
@@ -125,14 +130,14 @@ export async function loginAdmin(username, password) {
 }
 
 export async function saveAdminSettings(token, fields) {
-  return parseResponse(await fetch('/api/ramp/admin/settings/', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
+  return parseResponse(await fetch('/api/ramp/admin/settings/', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
 export async function getAdminBriefs(token, signal) {
-  return parseResponse(await fetch('/api/ramp/admin/briefs/', { headers: { Authorization: `Bearer ${token}` }, signal }))
+  return parseResponse(await fetch('/api/ramp/admin/briefs/', { headers: authHeaders(token), signal }))
 }
 
 export async function getAdminProjects(token) {
-  return parseResponse(await fetch('/api/ramp/admin/projects/', { headers: { Authorization: `Bearer ${token}` } }))
+  return parseResponse(await fetch('/api/ramp/admin/projects/', { headers: authHeaders(token) }))
 }
 

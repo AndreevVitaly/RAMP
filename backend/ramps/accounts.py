@@ -16,6 +16,10 @@ from .models import AdminContactSettings, CustomerSession
 ADMIN_TOKEN_SALT = "ramp-admin-session"
 
 
+def bearer_header(request):
+    return request.headers.get("Authorization") or request.headers.get("X-RAMP-Authorization", "")
+
+
 def normalize_phone(value):
     digits = "".join(character for character in str(value) if character.isdigit())
     if len(digits) == 11 and digits.startswith("8"):
@@ -30,7 +34,7 @@ def digest(value):
 
 
 def customer_from_request(request):
-    header = request.headers.get("Authorization", "")
+    header = bearer_header(request)
     if not header.startswith("Bearer "):
         raise AuthenticationFailed("Войдите в личный кабинет.")
     session = CustomerSession.objects.select_related("customer").filter(
@@ -52,7 +56,7 @@ def issue_admin_token(user):
 
 
 def admin_authorized(request):
-    header = request.headers.get("Authorization", "")
+    header = bearer_header(request)
     if not header.startswith("Bearer "):
         return False
     try:

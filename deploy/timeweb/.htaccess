@@ -2,4 +2,5 @@ Options +ExecCGI -Indexes
 AddHandler wsgi-script .py
 DirectoryIndex index.html
 RewriteEngine On
+SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
 RewriteRule ^(api/.*|admin/.*)$ /wsgi.py/$1 [QSA,PT,L]
