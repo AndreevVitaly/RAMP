@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password, make_password
 from django.test import TestCase
 from django.urls import reverse
 
-from ramps.models import AdminContactSettings, Customer
+from ramps.accounts import digest, issue_session
+from ramps.models import AdminContactSettings, Customer, CustomerAuthAttempt, CustomerSession
 
 
 class DjangoAdminTests(TestCase):
@@ -41,3 +43,27 @@ class DjangoAdminTests(TestCase):
         self.assertEqual(response.status_code, 403)
         customer.refresh_from_db()
         self.assertEqual(customer.name, "Анна")
+
+    def test_superuser_can_set_new_customer_password(self):
+        customer = Customer.objects.create(name="Анна", email="anna@example.com", password_hash=make_password("old-password-123"))
+        issue_session(customer)
+        CustomerAuthAttempt.objects.create(purpose="login", email_digest=digest("email:anna@example.com"), ip_digest=digest("ip:127.0.0.1"))
+        superuser = get_user_model().objects.create_superuser("operator", "operator@example.com", "test-password")
+        self.client.force_login(superuser)
+        url = reverse("admin:ramps_customer_reset_password", args=[customer.pk])
+        self.assertContains(self.client.get(url), "Новый временный пароль")
+        response = self.client.post(url, {"password": "new-password-123", "confirmation": "new-password-123"})
+        self.assertEqual(response.status_code, 302)
+        customer.refresh_from_db()
+        self.assertTrue(check_password("new-password-123", customer.password_hash))
+        self.assertFalse(CustomerSession.objects.filter(customer=customer).exists())
+        self.assertFalse(CustomerAuthAttempt.objects.filter(email_digest=digest("email:anna@example.com")).exists())
+
+    def test_staff_cannot_reset_customer_password(self):
+        customer = Customer.objects.create(name="Анна", email="anna@example.com", password_hash=make_password("old-password-123"))
+        staff = get_user_model().objects.create_user("helper", "helper@example.com", "test-password", is_staff=True)
+        self.client.force_login(staff)
+        url = reverse("admin:ramps_customer_reset_password", args=[customer.pk])
+        self.assertEqual(self.client.post(url, {"password": "new-password-123", "confirmation": "new-password-123"}).status_code, 403)
+        customer.refresh_from_db()
+        self.assertTrue(check_password("old-password-123", customer.password_hash))
