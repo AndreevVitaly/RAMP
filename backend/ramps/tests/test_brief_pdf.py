@@ -47,3 +47,19 @@ class TechnicalBriefPdfTests(APITestCase):
         other = Customer.objects.create(name="Другой", email="other@example.com", phone="+79000000001", email_verified=True)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {issue_session(other)}")
         self.assertEqual(self.client.get(f"/api/ramp/account/briefs/{brief.pk}/pdf/").status_code, 404)
+
+    def test_current_calculation_can_be_downloaded_without_sending_or_saving(self):
+        AdminContactSettings.objects.update(email="")
+        response = self.client.post("/api/ramp/account/briefs/pdf/download/", {
+            "configuration": {"height_cm": 50, "ramp_length_cm": 100, "width_cm": 40, "color": "beige", "has_slats": True},
+            "message": "Проверочный расчёт",
+        }, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF-"))
+        self.assertEqual(TechnicalBrief.objects.count(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.client.credentials()
+        self.assertEqual(self.client.post("/api/ramp/account/briefs/pdf/download/", {"configuration": {}}, format="json").status_code, 403)

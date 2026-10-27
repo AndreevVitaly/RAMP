@@ -88,13 +88,32 @@ export async function sendTechnicalBriefPdf(token, fields) {
   return parseResponse(await fetch('/api/ramp/account/briefs/pdf/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
 }
 
-export async function downloadTechnicalBriefPdf(token, id) {
-  const response = await fetch(`/api/ramp/account/briefs/${id}/pdf/`, { headers: { Authorization: `Bearer ${token}` } })
-  if (!response.ok) throw new Error('Не удалось скачать PDF.')
+async function savePdfResponse(response, filename) {
+  if (!response.ok) {
+    await parseResponse(response)
+    return
+  }
   const url = URL.createObjectURL(await response.blob())
   const link = document.createElement('a')
-  link.href = url; link.download = `ramp-technical-brief-${id}.pdf`; link.click()
+  link.href = url; link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 60000)
+}
+
+export async function downloadTechnicalBriefPdf(token, id) {
+  const response = await fetch(`/api/ramp/account/briefs/${id}/pdf/`, { headers: { Authorization: `Bearer ${token}` } })
+  return savePdfResponse(response, `ramp-technical-brief-${id}.pdf`)
+}
+
+export async function downloadCurrentBriefPdf(token, fields) {
+  const response = await fetch('/api/ramp/account/briefs/pdf/download/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(fields),
+  })
+  return savePdfResponse(response, 'ramp-technical-brief.pdf')
 }
 
 export async function getAdminSettings() {

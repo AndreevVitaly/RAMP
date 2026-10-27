@@ -292,6 +292,37 @@ class TechnicalBriefPdfView(APIView):
         return Response({"id": brief.pk, "delivery_status": delivery, "download_url": f"/api/ramp/account/briefs/{brief.pk}/pdf/"}, status=status.HTTP_201_CREATED)
 
 
+class TechnicalBriefPdfPreviewView(APIView):
+    def post(self, request):
+        customer = customer_from_request(request)
+        configuration = request.data.get("configuration")
+        if not isinstance(configuration, dict):
+            return Response({"detail": "Не указаны параметры пандуса."}, status=status.HTTP_400_BAD_REQUEST)
+        fields = {key: configuration[key] for key in RampCalculationSerializer().fields if key in configuration}
+        calculation = RampCalculationSerializer(data=fields)
+        calculation.is_valid(raise_exception=True)
+        try:
+            result = calculate_ramp_configuration(**calculation.validated_data)
+        except RampGeometryError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            from .brief_pdf import build_brief_pdf
+            brief = TechnicalBrief(
+                customer=customer,
+                message=str(request.data.get("message", ""))[:5000],
+                configuration=fields,
+                result=result,
+            )
+            pdf = build_brief_pdf(brief)
+        except ImportError:
+            return Response({"detail": "Генератор PDF не установлен."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except Exception:
+            return Response({"detail": "Не удалось сформировать PDF."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = 'attachment; filename="ramp-technical-brief.pdf"'
+        return response
+
+
 class TechnicalBriefPdfDownloadView(APIView):
     def get(self, request, pk):
         customer = customer_from_request(request)

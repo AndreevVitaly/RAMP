@@ -60,7 +60,8 @@ def build_brief_pdf(brief):
         ("Боковые бортики", "2 шт." if result["side_rails"] else "Не предусмотрены"),
         ("Ориентировочная стоимость", f"{int(result['price']['total_price_rub']):,} руб.".replace(",", " ")),
     ]
-    story = [p("RAMP · Техническое задание", "RampTitle"), p(f"№ {brief.pk} от {timezone.localtime(brief.created_at):%d.%m.%Y}", "RampSmall"),
+    document_label = f"№ {brief.pk} от {timezone.localtime(brief.created_at):%d.%m.%Y}" if brief.pk else f"Предварительный расчёт от {timezone.localtime():%d.%m.%Y}"
+    story = [p("RAMP · Техническое задание", "RampTitle"), p(document_label, "RampSmall"),
              p("Заказчик", "RampHeading"), p(" · ".join(filter(None, (brief.customer.name, brief.customer.phone, brief.customer.email)))),
              p("Параметры изделия", "RampHeading")]
     table = Table([[p(k), p(v)] for k, v in rows], colWidths=[255, 254], hAlign="LEFT")

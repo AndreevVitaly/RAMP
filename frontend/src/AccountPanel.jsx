@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { downloadTechnicalBriefPdf, getAccount, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
+import { downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAccount, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
 import { CUSTOMER_TOKEN_KEY } from './accessSession'
 
 export default function AccountPanel({ configuration, result, busy, onLoadProject, onSwitchUser }) {
@@ -9,6 +9,7 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
   const [channels, setChannels] = useState({ email: true, telegram: false, max: false })
   const [contacts, setContacts] = useState({})
   const [pdfBusy, setPdfBusy] = useState(false)
+  const [downloadBusy, setDownloadBusy] = useState(false)
   const [pdfId, setPdfId] = useState(null)
   const [projects, setProjects] = useState([])
   const [projectName, setProjectName] = useState('')
@@ -80,6 +81,15 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
     finally { setPdfBusy(false) }
   }
 
+  async function downloadCurrentPdf() {
+    setMessage(''); setDownloadBusy(true)
+    try {
+      await downloadCurrentBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), { message: comment, configuration })
+      setMessage('PDF сохранён на ваше устройство.')
+    } catch (error) { setMessage(error.message) }
+    finally { setDownloadBusy(false) }
+  }
+
   return <section id="customer-account" className="panel account-panel">
     <div className="section-heading"><div><p className="eyebrow">Личный кабинет</p><h2>{customer ? `Здравствуйте, ${customer.name}` : 'Вход и регистрация'}</h2></div>{customer && <button type="button" className="link-button" onClick={onSwitchUser}>Выйти</button>}</div>
     {!customer && <div className="account-form compact"><p>Войдите по email, чтобы увидеть свои проекты и отправить техническое задание.</p><button className="primary-button" type="button" onClick={onSwitchUser}>Войти в личный кабинет</button></div>}
@@ -107,6 +117,7 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
         <label><input type="checkbox" checked={channels.max} onChange={(e) => setChannels({ ...channels, max: e.target.checked })} /> MAX {contacts.max_contact && `(${contacts.max_contact})`}</label>
       </fieldset>
       <button className="primary-button" type="submit">Отправить техническое задание</button>
+      <button className="secondary-button" type="button" disabled={downloadBusy} onClick={downloadCurrentPdf}>{downloadBusy ? 'Формируем PDF…' : 'Скачать PDF на устройство'}</button>
       <button className="secondary-button" type="button" disabled={pdfBusy} onClick={submitPdf}>{pdfBusy ? 'Формируем PDF…' : 'Сформировать PDF и отправить на обе почты'}</button>
       {pdfId && <button className="link-button" type="button" onClick={() => downloadTechnicalBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), pdfId).catch((error) => setMessage(error.message))}>Скачать PDF №{pdfId}</button>}
     </form>}
