@@ -24,7 +24,7 @@ export default function RampDiagram({ ramp, pet }) {
   return (
     <figure className="diagram-card">
       <figcaption>Геометрический профиль пандуса</figcaption>
-      <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} role="img" aria-label="Боковой профиль пандуса с основанием и опорной стойкой">
+      <svg data-ramp-profile viewBox={`0 0 ${canvas.width} ${canvas.height}`} role="img" aria-label="Боковой профиль пандуса с основанием и опорной стойкой">
         <line x1="34" y1={floorY} x2={canvas.width - 34} y2={floorY} className="floor" />
         <line x1={sx(B.x)} y1={sy(B.y)} x2={sx(V.x)} y2={sy(V.y)} className="control-line" />
         <line x1={sx(A.x)} y1={sy(A.y)} x2={sx(C.x)} y2={sy(C.y)} className="base-line" />

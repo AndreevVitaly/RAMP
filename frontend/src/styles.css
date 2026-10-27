@@ -29,6 +29,8 @@ header p { margin: 0; color: #666a63; }
 .header-action { margin-left: auto; white-space: nowrap; }
 .header-actions { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 .header-actions button { white-space: nowrap; }
+.pdf-profile-source { position: fixed; left: -10000px; top: 0; width: 720px; pointer-events: none; }
+.pdf-profile-source .diagram-card { box-shadow: none; }
 .eyebrow { color: #385443; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
 .workspace { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 24px; align-items: start; }
 .panel, .diagram-card { background: #fff; border: 1px solid #dedcd4; border-radius: 20px; box-shadow: 0 10px 40px rgba(45, 50, 43, .05); }

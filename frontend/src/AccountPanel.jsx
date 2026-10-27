@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
 import { CUSTOMER_TOKEN_KEY } from './accessSession'
+import { captureRampProfile } from './profileSnapshot'
 
 export default function AccountPanel({ customer: initialCustomer, configuration, result, busy, onLoadProject, onSwitchUser }) {
   const [customer, setCustomer] = useState(initialCustomer)
@@ -76,7 +77,8 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
   async function submitPdf() {
     setMessage(''); setPdfBusy(true); setPdfId(null)
     try {
-      const response = await sendTechnicalBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), { message: comment, configuration })
+      const profile_image = await captureRampProfile()
+      const response = await sendTechnicalBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), { message: comment, configuration, profile_image })
       setPdfId(response.id)
       const label = (value) => value === 'sent' ? 'отправлено' : value === 'console_only' ? 'только локальная почтовая консоль' : 'ошибка отправки'
       setMessage(`PDF №${response.id} создан. Администратору: ${label(response.delivery_status.admin)}; клиенту: ${label(response.delivery_status.customer)}.`)
@@ -87,7 +89,8 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
   async function downloadCurrentPdf() {
     setMessage(''); setDownloadBusy(true)
     try {
-      await downloadCurrentBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), { message: comment, configuration })
+      const profile_image = await captureRampProfile()
+      await downloadCurrentBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), { message: comment, configuration, profile_image })
       setMessage('PDF сохранён на ваше устройство.')
     } catch (error) { handleAccountError(error) }
     finally { setDownloadBusy(false) }

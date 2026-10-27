@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { calculateRamp, downloadCurrentBriefPdf } from './api'
 import ProjectionViewer from './ProjectionViewer'
+import RampDiagram from './RampDiagram'
 import ImageStudio from './ImageStudio'
 import { PET_BREEDS, petPreset } from './pets'
 import AccountPanel from './AccountPanel'
 import AdminPanel from './AdminPanel'
 import { ADMIN_TOKEN_KEY, CUSTOMER_TOKEN_KEY } from './accessSession'
+import { captureRampProfile } from './profileSnapshot'
 
 const initialForm = { height_cm: 50, ramp_length_cm: 100, width_cm: 40, support_panel_width_cm: 20, color: 'dark_gray', has_slats: true, side_rails: false, product_state: 'deployed' }
 
@@ -31,8 +33,10 @@ export default function App({ onSwitchUser, customer, initialAdminPreview = null
     setPdfMessage('')
     setPdfBusy(true)
     try {
+      const profile_image = await captureRampProfile()
       await downloadCurrentBriefPdf(sessionStorage.getItem(ADMIN_TOKEN_KEY), {
         configuration: form,
+        profile_image,
         ...(adminPreview?.customer?.id ? { customer_id: adminPreview.customer.id } : {}),
       })
       setPdfMessage('PDF сохранён на устройство.')
@@ -110,6 +114,7 @@ export default function App({ onSwitchUser, customer, initialAdminPreview = null
   if (screen === 'admin') return <AdminPanel onClose={() => { setAdminPreview(null); setScreen('calculator') }} onSwitchUser={onSwitchUser} onOpenConfiguration={openClientConfiguration} />
 
   return <main>
+    {result && <div className="pdf-profile-source" aria-hidden="true"><RampDiagram ramp={result} pet={{ ...pet, enabled: false }} /></div>}
     <header><div className="brand">RAMP</div><div><p className="eyebrow">Конструктор пандусов для собак</p><h1>Рассчитайте удобный подъём</h1><p>Задайте размеры — мы рассчитаем геометрию и расположение поперечных реек.</p></div><div className="header-actions">{sessionStorage.getItem(ADMIN_TOKEN_KEY) && <button type="button" className="secondary-button" onClick={() => setScreen('admin')}>Кабинет администратора</button>}{!sessionStorage.getItem(ADMIN_TOKEN_KEY) && localStorage.getItem(CUSTOMER_TOKEN_KEY) && <><button type="button" className="primary-button" onClick={() => document.getElementById('saved-projects-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Перейти к сохранению</button><button type="button" className="secondary-button" onClick={() => document.getElementById('customer-account')?.scrollIntoView({ behavior: 'smooth' })}>Личный кабинет</button></>}<button type="button" className="secondary-button" onClick={onSwitchUser}>Сменить пользователя</button></div></header>
     {adminPreview && <section className="admin-preview-banner"><div><strong>Проект заказчика: {adminPreview.name}</strong><p>{adminPreview.customer.name} · {adminPreview.customer.email}{adminPreview.customer.phone ? ` · ${adminPreview.customer.phone}` : ''} · {adminPreview.kind === 'project' ? 'сохранённый проект' : 'отправленное техническое задание'}. Изменения в этом конструкторе не меняют запись клиента.</p></div><button type="button" className="secondary-button" onClick={() => adminPreview.djangoAdmin ? window.location.assign('/admin/ramps/savedproject/') : (setAdminPreview(null), setScreen('admin'))}>Вернуться к списку</button></section>}
     <div className="workspace">

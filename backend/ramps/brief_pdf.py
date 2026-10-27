@@ -1,4 +1,5 @@
 from io import BytesIO
+import base64
 from pathlib import Path
 
 from django.utils import timezone
@@ -8,7 +9,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import Image, SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from xml.sax.saxutils import escape
 
 
@@ -142,6 +143,16 @@ def _geometry_sheet(result, font):
     return drawing
 
 
+def _captured_profile(brief):
+    value = getattr(brief, "profile_image", "")
+    if not value:
+        return None
+    raw = base64.b64decode(value.split(",", 1)[1])
+    image = Image(BytesIO(raw), width=509, height=304)
+    image.hAlign = "LEFT"
+    return image
+
+
 def build_brief_pdf(brief):
     """Create a customer-readable specification from server-calculated values."""
     result = brief.result
@@ -172,7 +183,7 @@ def build_brief_pdf(brief):
     document_label = f"№ {brief.pk} от {timezone.localtime(brief.created_at):%d.%m.%Y}" if brief.pk else f"Предварительный расчёт от {timezone.localtime():%d.%m.%Y}"
     story = [p("RAMP · Техническое задание", "RampTitle"), p(document_label, "RampSmall"),
              p("Заказчик", "RampHeading"), p(" · ".join(filter(None, (brief.customer.name, brief.customer.phone, brief.customer.email)))),
-             p("Геометрия изделия", "RampHeading"), _geometry_sheet(result, font),
+             p("Геометрия изделия", "RampHeading"), _captured_profile(brief) or _geometry_sheet(result, font),
              p("Параметры изделия", "RampHeading")]
     compact_rows = []
     for index in range(0, len(rows), 2):

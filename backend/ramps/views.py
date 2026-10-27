@@ -3,6 +3,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError as ApiValidationError
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password, make_password
@@ -14,6 +15,8 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
+import base64
+import binascii
 import secrets
 
 from .accounts import admin_authorized, customer_from_request, deliver_brief, digest, issue_admin_token, issue_session, normalize_phone
@@ -21,6 +24,21 @@ from .models import AdminContactSettings, Customer, PhoneVerification, RampImage
 from .rate_limit import allow_customer_auth_attempt, allow_email_code_request
 from .serializers import AdminContactSettingsSerializer, AdminSavedProjectSerializer, CustomerSerializer, RampCalculationSerializer, RampImageSerializer, SavedProjectSerializer, TechnicalBriefSerializer
 from .services import RampGeometryError, calculate_ramp_configuration
+
+
+def validated_profile_image(value):
+    if not value:
+        return ""
+    prefix = "data:image/png;base64,"
+    if not isinstance(value, str) or not value.startswith(prefix) or len(value) > 3_000_000:
+        raise ApiValidationError("Некорректное изображение геометрического профиля.")
+    try:
+        raw = base64.b64decode(value[len(prefix):], validate=True)
+    except (ValueError, binascii.Error) as error:
+        raise ApiValidationError("Некорректное изображение геометрического профиля.") from error
+    if len(raw) > 2_000_000 or not raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ApiValidationError("Некорректное изображение геометрического профиля.")
+    return value
 
 
 class RampCalculationView(APIView):
@@ -268,6 +286,7 @@ class TechnicalBriefPdfView(APIView):
         brief = TechnicalBrief.objects.create(
             customer=customer, message=str(request.data.get("message", ""))[:5000],
             configuration=fields, result=result, requested_channels=["email"],
+            profile_image=validated_profile_image(request.data.get("profile_image")),
         )
         try:
             pdf = build_brief_pdf(brief)
@@ -324,6 +343,7 @@ class TechnicalBriefPdfPreviewView(APIView):
                 message=str(request.data.get("message", ""))[:5000],
                 configuration=fields,
                 result=result,
+                profile_image=validated_profile_image(request.data.get("profile_image")),
             )
             pdf = build_brief_pdf(brief)
         except ImportError:

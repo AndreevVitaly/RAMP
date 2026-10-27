@@ -136,6 +136,7 @@ class TechnicalBrief(models.Model):
     result = models.JSONField("Результат расчёта", default=dict)
     requested_channels = models.JSONField("Каналы отправки", default=list)
     delivery_status = models.JSONField("Статус отправки", default=dict)
+    profile_image = models.TextField("Изображение геометрического профиля", blank=True)
     created_at = models.DateTimeField("Создано", auto_now_add=True)
 
     class Meta:
