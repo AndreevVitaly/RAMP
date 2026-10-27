@@ -17,13 +17,21 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
   const [passwords, setPasswords] = useState({ current_password: '', new_password: '' })
   const [savingPassword, setSavingPassword] = useState(false)
 
+  function handleAccountError(error) {
+    if (error.status === 401 || error.status === 403) {
+      onSwitchUser()
+      return
+    }
+    setMessage(error.message)
+  }
+
   useEffect(() => {
     getAdminSettings().then(setContacts).catch(() => {})
   }, [])
 
   useEffect(() => {
     if (!customer) return
-    getSavedProjects(localStorage.getItem(CUSTOMER_TOKEN_KEY)).then(setProjects).catch((error) => setMessage(error.message))
+    getSavedProjects(localStorage.getItem(CUSTOMER_TOKEN_KEY)).then(setProjects).catch(handleAccountError)
   }, [customer?.id])
 
   async function saveCurrentProject(event) {
@@ -32,7 +40,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
       const saved = await saveProject(localStorage.getItem(CUSTOMER_TOKEN_KEY), { name: projectName.trim(), configuration })
       setProjects((current) => [saved, ...current]); setProjectName('')
       setMessage(`Проект «${saved.name}» сохранён.`)
-    } catch (error) { setMessage(error.message) }
+    } catch (error) { handleAccountError(error) }
     finally { setSavingProject(false) }
   }
 
@@ -45,7 +53,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
       setPasswords({ current_password: '', new_password: '' })
       setMessage(response.detail)
       details.open = false
-    } catch (error) { setMessage(error.message) }
+    } catch (error) { handleAccountError(error) }
     finally { setSavingPassword(false) }
   }
 
@@ -62,7 +70,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
       const response = await sendTechnicalBrief(localStorage.getItem(CUSTOMER_TOKEN_KEY), { message: comment, configuration, result, requested_channels: requested })
       const delivered = Object.entries(response.delivery_status).map(([key, value]) => `${key}: ${value === 'sent' ? 'отправлено' : value === 'not_configured' ? 'не настроено' : 'ошибка'}`).join(', ')
       setMessage(`Техническое задание №${response.id} сохранено. ${delivered}`); setComment('')
-    } catch (error) { setMessage(error.message) }
+    } catch (error) { handleAccountError(error) }
   }
 
   async function submitPdf() {
@@ -72,7 +80,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
       setPdfId(response.id)
       const label = (value) => value === 'sent' ? 'отправлено' : value === 'console_only' ? 'только локальная почтовая консоль' : 'ошибка отправки'
       setMessage(`PDF №${response.id} создан. Администратору: ${label(response.delivery_status.admin)}; клиенту: ${label(response.delivery_status.customer)}.`)
-    } catch (error) { setMessage(error.message) }
+    } catch (error) { handleAccountError(error) }
     finally { setPdfBusy(false) }
   }
 
@@ -81,7 +89,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
     try {
       await downloadCurrentBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), { message: comment, configuration })
       setMessage('PDF сохранён на ваше устройство.')
-    } catch (error) { setMessage(error.message) }
+    } catch (error) { handleAccountError(error) }
     finally { setDownloadBusy(false) }
   }
 
@@ -114,7 +122,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
       <button className="primary-button" type="submit">Отправить техническое задание</button>
       <button className="secondary-button" type="button" disabled={downloadBusy} onClick={downloadCurrentPdf}>{downloadBusy ? 'Формируем PDF…' : 'Скачать PDF на устройство'}</button>
       <button className="secondary-button" type="button" disabled={pdfBusy} onClick={submitPdf}>{pdfBusy ? 'Формируем PDF…' : 'Сформировать PDF и отправить на обе почты'}</button>
-      {pdfId && <button className="link-button" type="button" onClick={() => downloadTechnicalBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), pdfId).catch((error) => setMessage(error.message))}>Скачать PDF №{pdfId}</button>}
+      {pdfId && <button className="link-button" type="button" onClick={() => downloadTechnicalBriefPdf(localStorage.getItem(CUSTOMER_TOKEN_KEY), pdfId).catch(handleAccountError)}>Скачать PDF №{pdfId}</button>}
     </form>}
     {message && <div className="account-message" role="status">{message}</div>}
   </section>

@@ -39,6 +39,19 @@ export default function AccessGate({ children }) {
     return () => { active = false; clearTimeout(timeout); controller.abort() }
   }, [checkVersion])
 
+  useEffect(() => {
+    function handleStorage(event) {
+      if (event.key === CUSTOMER_TOKEN_KEY && event.oldValue && !event.newValue && !sessionStorage.getItem(ADMIN_TOKEN_KEY)) {
+        setVerifiedCustomer(null)
+        setStep('login')
+        setMessage('Войдите в личный кабинет ещё раз.')
+        setAccess('gate')
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
   function enterCustomer(response) {
     localStorage.setItem(CUSTOMER_TOKEN_KEY, response.token)
     sessionStorage.removeItem(GUEST_ACCESS_KEY)
