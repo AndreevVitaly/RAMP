@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { calculateRamp } from './api'
+import { calculateRamp, downloadCurrentBriefPdf } from './api'
 import ProjectionViewer from './ProjectionViewer'
 import ImageStudio from './ImageStudio'
 import { PET_BREEDS, petPreset } from './pets'
@@ -24,6 +24,24 @@ export default function App({ onSwitchUser }) {
   const [pet, setPet] = useState({ enabled: false, ...petPreset('dachshund') })
   const [screen, setScreen] = useState('calculator')
   const [adminPreview, setAdminPreview] = useState(null)
+  const [pdfBusy, setPdfBusy] = useState(false)
+  const [pdfMessage, setPdfMessage] = useState('')
+
+  async function downloadAdminPdf() {
+    setPdfMessage('')
+    setPdfBusy(true)
+    try {
+      await downloadCurrentBriefPdf(sessionStorage.getItem(ADMIN_TOKEN_KEY), {
+        configuration: form,
+        ...(adminPreview?.customer?.id ? { customer_id: adminPreview.customer.id } : {}),
+      })
+      setPdfMessage('PDF сохранён на устройство.')
+    } catch (downloadError) {
+      setPdfMessage(downloadError.message)
+    } finally {
+      setPdfBusy(false)
+    }
+  }
 
   function updatePet(event) {
     const { name, value, checked, type } = event.target
@@ -122,6 +140,7 @@ export default function App({ onSwitchUser }) {
         {error && <div className="notice error">{error}</div>}
         {result && <>
           <ProjectionViewer ramp={result} pet={pet} />
+          {sessionStorage.getItem(ADMIN_TOKEN_KEY) && <div className="panel"><button className="secondary-button" type="button" disabled={pdfBusy} onClick={downloadAdminPdf}>{pdfBusy ? 'Формируем PDF…' : 'Скачать PDF на устройство'}</button>{pdfMessage && <p role="status">{pdfMessage}</p>}</div>}
           <div className="panel metrics"><h2>Результат расчёта</h2><dl>
             <div><dt>Рекомендуемая длина</dt><dd>{result.recommended_length_cm} см</dd></div>
             <div><dt>Выбранная длина</dt><dd>{result.ramp_length_cm} см</dd></div>

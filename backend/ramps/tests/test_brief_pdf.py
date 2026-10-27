@@ -1,8 +1,12 @@
 from django.core import mail
+from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework.test import APITestCase
+from types import ModuleType
+from unittest.mock import patch
+import sys
 
-from ramps.accounts import issue_session
+from ramps.accounts import issue_admin_token, issue_session
 from ramps.models import AdminContactSettings, Customer, TechnicalBrief
 
 
@@ -63,3 +67,22 @@ class TechnicalBriefPdfTests(APITestCase):
 
         self.client.credentials()
         self.assertEqual(self.client.post("/api/ramp/account/briefs/pdf/download/", {"configuration": {}}, format="json").status_code, 403)
+
+    def test_admin_can_download_current_calculation_for_customer(self):
+        admin = get_user_model().objects.create_user(username="master", password="temporary-test-password", is_staff=True)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {issue_admin_token(admin)}")
+        pdf_module = ModuleType("ramps.brief_pdf")
+        def build_pdf(brief):
+            self.assertEqual(brief.customer, self.customer)
+            self.assertEqual(brief.result["price"]["total_price_rub"], 2000)
+            return b"%PDF-admin-test"
+        pdf_module.build_brief_pdf = build_pdf
+        with patch.dict(sys.modules, {"ramps.brief_pdf": pdf_module}):
+            response = self.client.post("/api/ramp/account/briefs/pdf/download/", {
+                "customer_id": self.customer.pk,
+                "configuration": {"height_cm": 50, "ramp_length_cm": 100, "width_cm": 40},
+            }, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b"%PDF-"))
+        self.assertEqual(TechnicalBrief.objects.count(), 0)
+        self.assertEqual(len(mail.outbox), 0)

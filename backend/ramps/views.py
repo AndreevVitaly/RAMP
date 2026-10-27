@@ -294,7 +294,18 @@ class TechnicalBriefPdfView(APIView):
 
 class TechnicalBriefPdfPreviewView(APIView):
     def post(self, request):
-        customer = customer_from_request(request)
+        if admin_authorized(request):
+            customer_id = request.data.get("customer_id")
+            if customer_id is not None:
+                if not str(customer_id).isdigit():
+                    return Response({"detail": "Некорректный идентификатор клиента."}, status=status.HTTP_400_BAD_REQUEST)
+                customer = Customer.objects.filter(pk=int(customer_id)).first()
+                if not customer:
+                    return Response({"detail": "Клиент не найден."}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                customer = Customer(name="Администратор", email="", phone="")
+        else:
+            customer = customer_from_request(request)
         configuration = request.data.get("configuration")
         if not isinstance(configuration, dict):
             return Response({"detail": "Не указаны параметры пандуса."}, status=status.HTTP_400_BAD_REQUEST)
