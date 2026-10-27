@@ -14,11 +14,17 @@ export async function calculateRamp(parameters, signal) {
 }
 
 async function parseResponse(response) {
-  const body = response.status === 204 ? null : await response.json()
+  const raw = response.status === 204 ? '' : await response.text()
+  let body
+  try { body = raw ? JSON.parse(raw) : null }
+  catch { body = null }
   if (!response.ok) {
     const detail = body?.detail || Object.values(body || {}).flat().join(' ') || 'Не удалось выполнить операцию.'
-    throw new Error(detail)
+    const error = new Error(detail)
+    error.status = response.status
+    throw error
   }
+  if (response.status !== 204 && body === null) throw new Error('Сервер вернул некорректный ответ.')
   return body
 }
 
@@ -58,8 +64,8 @@ export async function verifyEmailCode(email, code) {
   return parseResponse(await fetch('/api/ramp/account/verify-code/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, code }) }))
 }
 
-export async function getAccount(token) {
-  return parseResponse(await fetch('/api/ramp/account/me/', { headers: { Authorization: `Bearer ${token}` } }))
+export async function getAccount(token, signal) {
+  return parseResponse(await fetch('/api/ramp/account/me/', { headers: { Authorization: `Bearer ${token}` }, signal }))
 }
 
 export async function setCustomerPassword(token, fields) {
@@ -103,8 +109,8 @@ export async function saveAdminSettings(token, fields) {
   return parseResponse(await fetch('/api/ramp/admin/settings/', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
 }
 
-export async function getAdminBriefs(token) {
-  return parseResponse(await fetch('/api/ramp/admin/briefs/', { headers: { Authorization: `Bearer ${token}` } }))
+export async function getAdminBriefs(token, signal) {
+  return parseResponse(await fetch('/api/ramp/admin/briefs/', { headers: { Authorization: `Bearer ${token}` }, signal }))
 }
 
 export async function getAdminProjects(token) {

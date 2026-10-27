@@ -19,7 +19,10 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
   useEffect(() => {
     getAdminSettings().then(setContacts).catch(() => {})
     const token = localStorage.getItem(CUSTOMER_TOKEN_KEY)
-    if (token) getAccount(token).then(setCustomer).catch(() => localStorage.removeItem(CUSTOMER_TOKEN_KEY))
+    if (token) getAccount(token).then(setCustomer).catch((error) => {
+      if (error.status === 401 || error.status === 403) localStorage.removeItem(CUSTOMER_TOKEN_KEY)
+      else setMessage('Не удалось загрузить кабинет. Обновите страницу, чтобы повторить попытку.')
+    })
   }, [])
 
   useEffect(() => {

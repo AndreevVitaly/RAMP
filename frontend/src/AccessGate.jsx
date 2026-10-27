@@ -10,23 +10,31 @@ export default function AccessGate({ children }) {
   const [admin, setAdmin] = useState({ username: 'admin', password: '' })
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [checkVersion, setCheckVersion] = useState(0)
 
   useEffect(() => {
+    const controller = new AbortController()
+    let active = true
+    const timeout = setTimeout(() => controller.abort(), 10000)
+    const verified = () => { if (active) setAccess('allowed') }
+    const failed = (error, key, storage) => {
+      if (!active) return
+      if (error.status === 401 || error.status === 403) {
+        storage.removeItem(key)
+        setAccess('gate')
+      } else setAccess('unavailable')
+    }
     const adminToken = sessionStorage.getItem(ADMIN_TOKEN_KEY)
     if (adminToken) {
-      getAdminBriefs(adminToken).then(() => setAccess('allowed')).catch(() => {
-        sessionStorage.removeItem(ADMIN_TOKEN_KEY); setAccess('gate')
-      })
-      return
+      getAdminBriefs(adminToken, controller.signal).then(verified).catch((error) => failed(error, ADMIN_TOKEN_KEY, sessionStorage))
+    } else {
+      const token = localStorage.getItem(CUSTOMER_TOKEN_KEY)
+      if (token) getAccount(token, controller.signal).then(verified).catch((error) => failed(error, CUSTOMER_TOKEN_KEY, localStorage))
+      else if (sessionStorage.getItem(GUEST_ACCESS_KEY)) verified()
+      else setAccess('gate')
     }
-    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY)
-    if (token) {
-      getAccount(token).then(() => setAccess('allowed')).catch(() => {
-        localStorage.removeItem(CUSTOMER_TOKEN_KEY); setAccess('gate')
-      })
-    } else if (sessionStorage.getItem(GUEST_ACCESS_KEY)) setAccess('allowed')
-    else setAccess('gate')
-  }, [])
+    return () => { active = false; clearTimeout(timeout); controller.abort() }
+  }, [checkVersion])
 
   function enterCustomer(response) {
     localStorage.setItem(CUSTOMER_TOKEN_KEY, response.token)
@@ -82,6 +90,13 @@ export default function AccessGate({ children }) {
 
   if (access === 'checking') return <div className="access-loading">Загружаем RAMP…</div>
   if (access === 'allowed') return children(switchUser)
+  if (access === 'unavailable') return <main className="access-page"><section className="access-card">
+    <div className="brand">RAMP</div>
+    <h1>Не удалось проверить вход</h1>
+    <p className="access-lead">Соединение с сервером временно недоступно. Ваш вход сохранён.</p>
+    <button className="primary-button" type="button" onClick={() => { setAccess('checking'); setCheckVersion((value) => value + 1) }}>Повторить попытку</button>
+    <button className="link-button" type="button" onClick={switchUser}>Сменить пользователя</button>
+  </section></main>
 
   return <main className="access-page"><section className="access-card">
     <div className="brand">RAMP</div>
