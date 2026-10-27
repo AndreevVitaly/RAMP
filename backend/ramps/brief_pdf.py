@@ -91,6 +91,61 @@ def _projection_drawing(result, view, font):
     return drawing
 
 
+def _geometry_sheet(result, font):
+    """Put the dimensioned side profile first and keep secondary views compact."""
+    drawing = Drawing(509, 145)
+    edge = colors.HexColor("#294b3b")
+    muted = colors.HexColor("#6a716c")
+    accent = colors.HexColor("#a46f35")
+    surface = colors.HexColor(SURFACE_COLORS.get(result["color"], SURFACE_COLORS["dark_gray"]))
+    geometry, g3 = result["geometry"], result["geometry_3d"]
+    points = geometry["points"]
+    run, height, width = result["horizontal_run_cm"], result["height_cm"], result["width_cm"]
+    drawing.add(Rect(0, 0, 509, 145, fillColor=colors.HexColor("#f6f8f6"), strokeColor=colors.HexColor("#d8dfda"), rx=5, ry=5))
+
+    # Main manufacturing profile (XZ).
+    scale = min(282 / max(run, 1), 82 / max(height, 1))
+    ox, oy = 16, 29
+    p = lambda source: (ox + source["x"] * scale, oy + source["y"] * scale)
+    a, b, c = points["ramp_start"], points["ramp_end"], points["base_end"]
+    d, s = points["support_hinge"], points["support_foot"]
+    drawing.add(Line(*p(a), *p(c), strokeColor=edge, strokeWidth=2))
+    drawing.add(Line(*p(a), *p(b), strokeColor=surface, strokeWidth=7))
+    drawing.add(Line(*p(a), *p(b), strokeColor=edge, strokeWidth=1))
+    drawing.add(Line(*p(s), *p(d), strokeColor=surface, strokeWidth=7))
+    drawing.add(Line(*p(s), *p(d), strokeColor=edge, strokeWidth=1))
+    drawing.add(Line(p(b)[0], p(b)[1], p(b)[0], oy, strokeColor=muted, strokeWidth=.5, strokeDashArray=[2, 2]))
+    for name, source, dx, dy in (("A", a, -8, -10), ("B", b, 4, 4), ("C", c, 4, -10), ("D", d, -3, 7), ("S", s, -3, -11)):
+        x, y = p(source)
+        drawing.add(String(x + dx, y + dy, name, fontName=font, fontSize=7, fillColor=edge))
+    drawing.add(Line(p(d)[0], p(d)[1], p(d)[0], p(d)[1], strokeColor=accent, strokeWidth=6))
+    drawing.add(String(18, 129, "Геометрический профиль · XZ", fontName=font, fontSize=9, fillColor=edge))
+    drawing.add(String(18, 12, f"AB {_number(result['ramp_length_cm'])} см  ·  AC {round(geometry['base_length_cm'])} см  ·  угол {_number(result['angle_deg'])}°", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String(175, 129, f"BD 75%  ·  DS {_number(geometry['support_length_cm'])} см  ·  стойка 105°", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String(p(b)[0] + 6, oy + height * scale / 2, f"H {_number(height)} см", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String(p(s)[0] + 5, oy + 5, "упор", fontName=font, fontSize=6, fillColor=accent))
+
+    # Compact top projection.
+    tx, ty, tw, th = 350, 82, 143, 42
+    top_scale = min(tw / max(result["ramp_length_cm"], 1), th / max(width, 1))
+    actual_w, actual_h = result["ramp_length_cm"] * top_scale, width * top_scale
+    top_x, top_y = tx + (tw - actual_w) / 2, ty + (th - actual_h) / 2
+    drawing.add(String(421, 129, "Сверху", textAnchor="middle", fontName=font, fontSize=7, fillColor=edge))
+    drawing.add(Rect(top_x, top_y, actual_w, actual_h, fillColor=surface, strokeColor=edge, strokeWidth=.7))
+    for position in result["step_positions_cm"] if result["has_slats"] else []:
+        drawing.add(Rect(top_x + position * top_scale, top_y, max(1, result["step_width_cm"] * top_scale), actual_h, fillColor=muted, strokeColor=None))
+
+    # Compact axonometric silhouette.
+    project = lambda x, y, z: (350 + (x + y * .42) * .72, 22 + (z + y * .25) * .72)
+    corners = g3["ramp_surface"]["corners"]
+    polygon = [corners[key] for key in ("a_left", "b_left", "b_right", "a_right")]
+    drawing.add(String(421, 67, "Аксонометрия", textAnchor="middle", fontName=font, fontSize=7, fillColor=edge))
+    drawing.add(_polygon([project(item["x"], item["y"], item["z"]) for item in polygon], fillColor=surface, strokeColor=edge, strokeWidth=.7))
+    support = g3["support"]["axis"]
+    drawing.add(Line(*project(support["foot"]["x"], width / 2, support["foot"]["z"]), *project(support["hinge"]["x"], width / 2, support["hinge"]["z"]), strokeColor=edge, strokeWidth=5))
+    return drawing
+
+
 def build_brief_pdf(brief):
     """Create a customer-readable specification from server-calculated values."""
     result = brief.result
@@ -121,8 +176,7 @@ def build_brief_pdf(brief):
     document_label = f"№ {brief.pk} от {timezone.localtime(brief.created_at):%d.%m.%Y}" if brief.pk else f"Предварительный расчёт от {timezone.localtime():%d.%m.%Y}"
     story = [p("RAMP · Техническое задание", "RampTitle"), p(document_label, "RampSmall"),
              p("Заказчик", "RampHeading"), p(" · ".join(filter(None, (brief.customer.name, brief.customer.phone, brief.customer.email)))),
-             p("Изображение изделия", "RampHeading"),
-             Table([[_projection_drawing(result, view, font) for view in ("side", "top", "axon")]], colWidths=[169, 169, 169]),
+             p("Геометрия изделия", "RampHeading"), _geometry_sheet(result, font),
              p("Параметры изделия", "RampHeading")]
     compact_rows = []
     for index in range(0, len(rows), 2):
