@@ -92,8 +92,8 @@ def _projection_drawing(result, view, font):
 
 
 def _geometry_sheet(result, font):
-    """Put the dimensioned side profile first and keep secondary views compact."""
-    drawing = Drawing(509, 145)
+    """Mirror the successful dimensioned XZ profile used by the configurator."""
+    drawing = Drawing(509, 210)
     edge = colors.HexColor("#294b3b")
     muted = colors.HexColor("#6a716c")
     accent = colors.HexColor("#a46f35")
@@ -101,48 +101,44 @@ def _geometry_sheet(result, font):
     geometry, g3 = result["geometry"], result["geometry_3d"]
     points = geometry["points"]
     run, height, width = result["horizontal_run_cm"], result["height_cm"], result["width_cm"]
-    drawing.add(Rect(0, 0, 509, 145, fillColor=colors.HexColor("#f6f8f6"), strokeColor=colors.HexColor("#d8dfda"), rx=5, ry=5))
+    drawing.add(Rect(0, 0, 509, 210, fillColor=colors.HexColor("#f6f8f6"), strokeColor=colors.HexColor("#d8dfda"), rx=5, ry=5))
 
     # Main manufacturing profile (XZ).
-    scale = min(282 / max(run, 1), 82 / max(height, 1))
-    ox, oy = 16, 29
+    scale = min(405 / max(run, 1), 118 / max(height, 1))
+    ox, oy = 32, 57
     p = lambda source: (ox + source["x"] * scale, oy + source["y"] * scale)
     a, b, c = points["ramp_start"], points["ramp_end"], points["base_end"]
     d, s = points["support_hinge"], points["support_foot"]
+    drawing.add(Line(16, oy, 493, oy, strokeColor=muted, strokeWidth=.6))
     drawing.add(Line(*p(a), *p(c), strokeColor=edge, strokeWidth=2))
     drawing.add(Line(*p(a), *p(b), strokeColor=surface, strokeWidth=7))
     drawing.add(Line(*p(a), *p(b), strokeColor=edge, strokeWidth=1))
     drawing.add(Line(*p(s), *p(d), strokeColor=surface, strokeWidth=7))
     drawing.add(Line(*p(s), *p(d), strokeColor=edge, strokeWidth=1))
     drawing.add(Line(p(b)[0], p(b)[1], p(b)[0], oy, strokeColor=muted, strokeWidth=.5, strokeDashArray=[2, 2]))
-    for name, source, dx, dy in (("A", a, -8, -10), ("B", b, 4, 4), ("C", c, 4, -10), ("D", d, -3, 7), ("S", s, -3, -11)):
+    for name, source, dx, dy in (("A", a, -8, 5), ("B", b, 5, 5), ("C — конец основания", c, 5, 5), ("D", d, -3, 9), ("S", s, -3, -12)):
         x, y = p(source)
         drawing.add(String(x + dx, y + dy, name, fontName=font, fontSize=7, fillColor=edge))
     drawing.add(Line(p(d)[0], p(d)[1], p(d)[0], p(d)[1], strokeColor=accent, strokeWidth=6))
-    drawing.add(String(18, 129, "Геометрический профиль · XZ", fontName=font, fontSize=9, fillColor=edge))
-    drawing.add(String(18, 12, f"AB {_number(result['ramp_length_cm'])} см  ·  AC {round(geometry['base_length_cm'])} см  ·  угол {_number(result['angle_deg'])}°", fontName=font, fontSize=7, fillColor=muted))
-    drawing.add(String(175, 129, f"BD 75%  ·  DS {_number(geometry['support_length_cm'])} см  ·  стойка 105°", fontName=font, fontSize=7, fillColor=muted))
-    drawing.add(String(p(b)[0] + 6, oy + height * scale / 2, f"H {_number(height)} см", fontName=font, fontSize=7, fillColor=muted))
-    drawing.add(String(p(s)[0] + 5, oy + 5, "упор", fontName=font, fontSize=6, fillColor=accent))
-
-    # Compact top projection.
-    tx, ty, tw, th = 350, 82, 143, 42
-    top_scale = min(tw / max(result["ramp_length_cm"], 1), th / max(width, 1))
-    actual_w, actual_h = result["ramp_length_cm"] * top_scale, width * top_scale
-    top_x, top_y = tx + (tw - actual_w) / 2, ty + (th - actual_h) / 2
-    drawing.add(String(421, 129, "Сверху", textAnchor="middle", fontName=font, fontSize=7, fillColor=edge))
-    drawing.add(Rect(top_x, top_y, actual_w, actual_h, fillColor=surface, strokeColor=edge, strokeWidth=.7))
-    for position in result["step_positions_cm"] if result["has_slats"] else []:
-        drawing.add(Rect(top_x + position * top_scale, top_y, max(1, result["step_width_cm"] * top_scale), actual_h, fillColor=muted, strokeColor=None))
-
-    # Compact axonometric silhouette.
-    project = lambda x, y, z: (350 + (x + y * .42) * .72, 22 + (z + y * .25) * .72)
-    corners = g3["ramp_surface"]["corners"]
-    polygon = [corners[key] for key in ("a_left", "b_left", "b_right", "a_right")]
-    drawing.add(String(421, 67, "Аксонометрия", textAnchor="middle", fontName=font, fontSize=7, fillColor=edge))
-    drawing.add(_polygon([project(item["x"], item["y"], item["z"]) for item in polygon], fillColor=surface, strokeColor=edge, strokeWidth=.7))
-    support = g3["support"]["axis"]
-    drawing.add(Line(*project(support["foot"]["x"], width / 2, support["foot"]["z"]), *project(support["hinge"]["x"], width / 2, support["hinge"]["z"]), strokeColor=edge, strokeWidth=5))
+    drawing.add(String(18, 193, "Геометрический профиль пандуса", fontName=font, fontSize=10, fillColor=edge))
+    drawing.add(String(p(d)[0] - 10, p(d)[1] + 17, "D — шарнир, 75%", textAnchor="end", fontName=font, fontSize=7, fillColor=accent))
+    drawing.add(String(p(s)[0] - 10, oy + 11, "упор", textAnchor="end", fontName=font, fontSize=7, fillColor=accent))
+    drawing.add(String(p(b)[0] + 10, oy + height * scale / 2, f"высота {_number(height)} см", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String((p(a)[0] + p(d)[0]) / 2 - 12, (p(a)[1] + p(d)[1]) / 2 + 14, f"A→D {_number(geometry['measurements']['ramp_start_to_hinge_cm'])} см", textAnchor="middle", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String((p(a)[0] + p(s)[0]) / 2, oy - 14, f"A→S {_number(geometry['measurements']['ramp_start_to_support_foot_cm'])} см", textAnchor="middle", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String((p(s)[0] + p(c)[0]) / 2, oy - 14, f"S→C {_number(geometry['measurements']['support_foot_to_base_end_cm'])} см", textAnchor="middle", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String(p(a)[0] + 42, oy + 8, f"наклон {_number(result['angle_deg'])}°", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String((p(s)[0] + p(d)[0]) / 2 + 12, (p(s)[1] + p(d)[1]) / 2 + 7, f"D→S {_number(geometry['measurements']['support_length_cm'])} см", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String((p(s)[0] + p(d)[0]) / 2 + 12, (p(s)[1] + p(d)[1]) / 2 - 5, f"{_number(geometry['support']['floor_angle_deg'])}° к полу", fontName=font, fontSize=7, fillColor=muted))
+    drawing.add(String(p(s)[0], oy - 29, "S — опора стойки", textAnchor="middle", fontName=font, fontSize=7, fillColor=muted))
+    vx = ox + points["vertical_projection"]["x"] * scale
+    cx = p(c)[0]
+    dimension_y = oy - 32
+    drawing.add(Line(cx, dimension_y, vx, dimension_y, strokeColor=accent, strokeWidth=.7))
+    drawing.add(Line(cx, dimension_y - 4, cx, dimension_y + 4, strokeColor=accent, strokeWidth=.7))
+    drawing.add(Line(vx, dimension_y - 4, vx, dimension_y + 4, strokeColor=accent, strokeWidth=.7))
+    drawing.add(String((cx + vx) / 2, dimension_y - 11, f"отступ {_number(geometry['base_vertical_offset_cm'])} см", textAnchor="middle", fontName=font, fontSize=7, fillColor=accent))
+    drawing.add(String(18, 9, "Стойка идёт от опоры S вверх-вправо к шарниру D; точка C обозначает конец основания.", fontName=font, fontSize=7, fillColor=muted))
     return drawing
 
 
