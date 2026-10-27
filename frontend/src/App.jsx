@@ -166,7 +166,7 @@ export default function App({ onSwitchUser }) {
           </dl></div>
           <ImageStudio ramp={result} configuration={form} pet={pet} />
         </>}
-        {!adminPreview && <AccountPanel configuration={{ ...form, pet }} result={result} busy={loading} onLoadProject={loadProject} onSwitchUser={onSwitchUser} />}
+        {!adminPreview && !sessionStorage.getItem(ADMIN_TOKEN_KEY) && <AccountPanel configuration={{ ...form, pet }} result={result} busy={loading} onLoadProject={loadProject} onSwitchUser={onSwitchUser} />}
       </section>
     </div>
   </main>

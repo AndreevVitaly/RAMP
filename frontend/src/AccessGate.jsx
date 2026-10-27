@@ -63,7 +63,6 @@ export default function AccessGate({ children }) {
       const response = await loginAdmin(admin.username, admin.password)
       sessionStorage.setItem(ADMIN_TOKEN_KEY, response.token)
       sessionStorage.removeItem(GUEST_ACCESS_KEY)
-      localStorage.removeItem(CUSTOMER_TOKEN_KEY)
       setAccess('allowed')
     } catch (error) { setMessage(error.message) }
     finally { setBusy(false) }
