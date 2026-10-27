@@ -5,6 +5,6 @@ import AccessGate from './AccessGate'
 import './styles.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode><AccessGate>{(onSwitchUser) => <App onSwitchUser={onSwitchUser} />}</AccessGate></React.StrictMode>,
+  <React.StrictMode><AccessGate>{(onSwitchUser, customer) => <App onSwitchUser={onSwitchUser} customer={customer} />}</AccessGate></React.StrictMode>,
 )
 

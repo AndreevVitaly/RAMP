@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getAccount, getAdminBriefs, loginAdmin, loginCustomer, registerCustomer } from './api'
+import { getAccount, getAdminBriefs, loginAdmin, loginCustomer, registerCustomer, requestLoginCode, verifyEmailCode } from './api'
 import { ADMIN_TOKEN_KEY, clearAccessStorage, CUSTOMER_TOKEN_KEY, GUEST_ACCESS_KEY } from './accessSession'
 
 export default function AccessGate({ children }) {
@@ -7,16 +7,19 @@ export default function AccessGate({ children }) {
   const [step, setStep] = useState('login')
   const [registration, setRegistration] = useState({ name: '', email: '', password: '' })
   const [login, setLogin] = useState({ email: '', password: '' })
+  const [codeEmail, setCodeEmail] = useState('')
+  const [code, setCode] = useState('')
   const [admin, setAdmin] = useState({ username: 'admin', password: '' })
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [checkVersion, setCheckVersion] = useState(0)
+  const [verifiedCustomer, setVerifiedCustomer] = useState(null)
 
   useEffect(() => {
     const controller = new AbortController()
     let active = true
     const timeout = setTimeout(() => controller.abort(), 10000)
-    const verified = () => { if (active) setAccess('allowed') }
+    const verified = (customer = null) => { if (active) { setVerifiedCustomer(customer); setAccess('allowed') } }
     const failed = (error, key, storage) => {
       if (!active) return
       if (error.status === 401 || error.status === 403) {
@@ -26,7 +29,7 @@ export default function AccessGate({ children }) {
     }
     const adminToken = sessionStorage.getItem(ADMIN_TOKEN_KEY)
     if (adminToken) {
-      getAdminBriefs(adminToken, controller.signal).then(verified).catch((error) => failed(error, ADMIN_TOKEN_KEY, sessionStorage))
+      getAdminBriefs(adminToken, controller.signal).then(() => verified()).catch((error) => failed(error, ADMIN_TOKEN_KEY, sessionStorage))
     } else {
       const token = localStorage.getItem(CUSTOMER_TOKEN_KEY)
       if (token) getAccount(token, controller.signal).then(verified).catch((error) => failed(error, CUSTOMER_TOKEN_KEY, localStorage))
@@ -40,6 +43,7 @@ export default function AccessGate({ children }) {
     localStorage.setItem(CUSTOMER_TOKEN_KEY, response.token)
     sessionStorage.removeItem(GUEST_ACCESS_KEY)
     sessionStorage.removeItem(ADMIN_TOKEN_KEY)
+    setVerifiedCustomer(response.customer)
     setAccess('allowed')
   }
 
@@ -57,12 +61,32 @@ export default function AccessGate({ children }) {
     finally { setBusy(false) }
   }
 
+  async function submitCodeRequest(event) {
+    event.preventDefault(); setMessage(''); setBusy(true)
+    try {
+      const email = codeEmail.trim()
+      const response = await requestLoginCode(email)
+      setCodeEmail(email)
+      setMessage(response.detail)
+      setStep('verify-code')
+    } catch (error) { setMessage(error.message) }
+    finally { setBusy(false) }
+  }
+
+  async function submitCode(event) {
+    event.preventDefault(); setMessage(''); setBusy(true)
+    try { enterCustomer(await verifyEmailCode(codeEmail, code.trim())) }
+    catch (error) { setMessage(error.message) }
+    finally { setBusy(false) }
+  }
+
   async function submitAdmin(event) {
     event.preventDefault(); setMessage(''); setBusy(true)
     try {
       const response = await loginAdmin(admin.username, admin.password)
       sessionStorage.setItem(ADMIN_TOKEN_KEY, response.token)
       sessionStorage.removeItem(GUEST_ACCESS_KEY)
+      setVerifiedCustomer(null)
       setAccess('allowed')
     } catch (error) { setMessage(error.message) }
     finally { setBusy(false) }
@@ -71,11 +95,13 @@ export default function AccessGate({ children }) {
   function continueAsGuest() {
     clearAccessStorage()
     sessionStorage.setItem(GUEST_ACCESS_KEY, 'true')
+    setVerifiedCustomer(null)
     setAccess('allowed')
   }
 
   function switchUser() {
     clearAccessStorage()
+    setVerifiedCustomer(null)
     setStep('login')
     setRegistration({ name: '', email: '', password: '' })
     setLogin({ email: '', password: '' })
@@ -88,7 +114,7 @@ export default function AccessGate({ children }) {
   function goTo(nextStep) { setMessage(''); setStep(nextStep) }
 
   if (access === 'checking') return <div className="access-loading">Загружаем RAMP…</div>
-  if (access === 'allowed') return children(switchUser)
+  if (access === 'allowed') return children(switchUser, verifiedCustomer)
   if (access === 'unavailable') return <main className="access-page"><section className="access-card">
     <div className="brand">RAMP</div>
     <h1>Не удалось проверить вход</h1>
@@ -110,11 +136,25 @@ export default function AccessGate({ children }) {
       </form>
       <div className="access-actions">
         <button className="secondary-button" type="button" onClick={() => goTo('register')}>Зарегистрироваться</button>
+        <button className="secondary-button" type="button" onClick={() => { setCodeEmail(login.email); goTo('request-code') }}>Войти по коду из письма</button>
         <button className="secondary-button guest-entry-button" type="button" onClick={continueAsGuest}>Посмотреть без регистрации</button>
         <button className="admin-entry-button" type="button" onClick={() => goTo('admin')}>Я администратор</button>
       </div>
       <small>Без регистрации можно пользоваться конструктором, но нельзя сохранять проекты и отправлять заказ.</small>
     </>}
+    {step === 'request-code' && <form className="access-form" onSubmit={submitCodeRequest}>
+      <h2>Вход по коду из письма</h2>
+      <p>Для аккаунтов, созданных до появления входа по паролю.</p>
+      <label className="field"><span>Электронная почта</span><input required type="email" autoComplete="email" value={codeEmail} onChange={(event) => setCodeEmail(event.target.value)} /></label>
+      <button className="primary-button" type="submit" disabled={busy}>Получить код</button>
+      <button className="link-button" type="button" onClick={() => goTo('login')}>Назад</button>
+    </form>}
+    {step === 'verify-code' && <form className="access-form" onSubmit={submitCode}>
+      <h2>Введите код из письма</h2>
+      <label className="field"><span>Код</span><input required inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value)} /></label>
+      <button className="primary-button" type="submit" disabled={busy}>Войти</button>
+      <button className="link-button" type="button" onClick={() => goTo('request-code')}>Запросить новый код</button>
+    </form>}
     {step === 'register' && <form className="access-form" onSubmit={submitRegistration}>
       <p className="eyebrow">Первый вход</p><h2>Регистрация</h2>
       <label className="field"><span>Имя</span><input required maxLength="120" autoComplete="name" value={registration.name} onChange={(event) => setRegistration({ ...registration, name: event.target.value })} /></label>

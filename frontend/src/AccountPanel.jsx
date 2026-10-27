@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAccount, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
+import { downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
 import { CUSTOMER_TOKEN_KEY } from './accessSession'
 
-export default function AccountPanel({ configuration, result, busy, onLoadProject, onSwitchUser }) {
-  const [customer, setCustomer] = useState(null)
+export default function AccountPanel({ customer: initialCustomer, configuration, result, busy, onLoadProject, onSwitchUser }) {
+  const [customer, setCustomer] = useState(initialCustomer)
   const [message, setMessage] = useState('')
   const [comment, setComment] = useState('')
   const [channels, setChannels] = useState({ email: true, telegram: false, max: false })
@@ -18,19 +18,7 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
   const [savingPassword, setSavingPassword] = useState(false)
 
   useEffect(() => {
-    let active = true
     getAdminSettings().then(setContacts).catch(() => {})
-    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY)
-    if (token) getAccount(token).then((account) => {
-      if (active && localStorage.getItem(CUSTOMER_TOKEN_KEY) === token) setCustomer(account)
-    }).catch((error) => {
-      if (active && localStorage.getItem(CUSTOMER_TOKEN_KEY) === token) {
-        setMessage(error.status === 401 || error.status === 403
-          ? 'Не удалось подтвердить вход. Обновите страницу или войдите снова.'
-          : 'Не удалось загрузить кабинет. Обновите страницу, чтобы повторить попытку.')
-      }
-    })
-    return () => { active = false }
   }, [])
 
   useEffect(() => {

@@ -15,7 +15,7 @@ function NumberField({ label, name, value, onChange, hint, min = 0 }) {
 
 const rubles = (value) => new Intl.NumberFormat('ru-RU').format(value) + ' ₽'
 
-export default function App({ onSwitchUser }) {
+export default function App({ onSwitchUser, customer }) {
   const [form, setForm] = useState(initialForm)
   const [lengthEdited, setLengthEdited] = useState(false)
   const [result, setResult] = useState(null)
@@ -166,7 +166,7 @@ export default function App({ onSwitchUser }) {
           </dl></div>
           <ImageStudio ramp={result} configuration={form} pet={pet} />
         </>}
-        {!adminPreview && !sessionStorage.getItem(ADMIN_TOKEN_KEY) && <AccountPanel configuration={{ ...form, pet }} result={result} busy={loading} onLoadProject={loadProject} onSwitchUser={onSwitchUser} />}
+        {!adminPreview && !sessionStorage.getItem(ADMIN_TOKEN_KEY) && <AccountPanel customer={customer} configuration={{ ...form, pet }} result={result} busy={loading} onLoadProject={loadProject} onSwitchUser={onSwitchUser} />}
       </section>
     </div>
   </main>
