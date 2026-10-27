@@ -115,10 +115,15 @@ class TechnicalBriefAdmin(ReadOnlyAdmin):
 
 @admin.register(SavedProject)
 class SavedProjectAdmin(ReadOnlyAdmin):
-    list_display = ("id", "name", "customer", "updated_at")
+    list_display = ("id", "project_link", "customer", "updated_at")
+    list_display_links = None
     search_fields = ("name", "customer__name", "customer__email")
     list_select_related = ("customer",)
     list_filter = ("created_at",)
+
+    @admin.display(description="Название", ordering="name")
+    def project_link(self, obj):
+        return format_html('<a href="/?admin_project={}">{}</a>', obj.pk, obj.name)
 
 
 @admin.register(RampImage)

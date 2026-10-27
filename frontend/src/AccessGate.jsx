@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getAccount, getAdminBriefs, loginAdmin, loginCustomer, registerCustomer, requestLoginCode, verifyEmailCode } from './api'
+import { getAccount, getAdminBriefs, getDjangoAdminProject, loginAdmin, loginCustomer, registerCustomer, requestLoginCode, verifyEmailCode } from './api'
 import { ADMIN_TOKEN_KEY, clearAccessStorage, CUSTOMER_TOKEN_KEY, GUEST_ACCESS_KEY } from './accessSession'
 
 export default function AccessGate({ children }) {
@@ -14,6 +14,7 @@ export default function AccessGate({ children }) {
   const [busy, setBusy] = useState(false)
   const [checkVersion, setCheckVersion] = useState(0)
   const [verifiedCustomer, setVerifiedCustomer] = useState(null)
+  const [initialAdminPreview, setInitialAdminPreview] = useState(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -27,8 +28,13 @@ export default function AccessGate({ children }) {
         setAccess('gate')
       } else setAccess('unavailable')
     }
+    const adminProjectId = new URLSearchParams(window.location.search).get('admin_project')
     const adminToken = sessionStorage.getItem(ADMIN_TOKEN_KEY)
-    if (adminToken) {
+    if (adminProjectId && /^\d+$/.test(adminProjectId)) {
+      getDjangoAdminProject(adminProjectId, controller.signal)
+        .then((project) => { setInitialAdminPreview({ ...project, kind: 'project', djangoAdmin: true }); verified() })
+        .catch(() => { window.location.assign(`/admin/ramps/savedproject/`) })
+    } else if (adminToken) {
       getAdminBriefs(adminToken, controller.signal).then(() => verified()).catch((error) => failed(error, ADMIN_TOKEN_KEY, sessionStorage))
     } else {
       const token = localStorage.getItem(CUSTOMER_TOKEN_KEY)
@@ -127,7 +133,7 @@ export default function AccessGate({ children }) {
   function goTo(nextStep) { setMessage(''); setStep(nextStep) }
 
   if (access === 'checking') return <div className="access-loading">Загружаем RAMP…</div>
-  if (access === 'allowed') return children(switchUser, verifiedCustomer)
+  if (access === 'allowed') return children(switchUser, verifiedCustomer, initialAdminPreview)
   if (access === 'unavailable') return <main className="access-page"><section className="access-card">
     <div className="brand">RAMP</div>
     <h1>Не удалось проверить вход</h1>

@@ -141,3 +141,7 @@ export async function getAdminProjects(token) {
   return parseResponse(await fetch('/api/ramp/admin/projects/', { headers: authHeaders(token) }))
 }
 
+export async function getDjangoAdminProject(id, signal) {
+  return parseResponse(await fetch(`/api/ramp/admin/projects/${id}/preview/`, { signal }))
+}
+

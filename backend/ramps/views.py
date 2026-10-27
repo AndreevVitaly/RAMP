@@ -10,7 +10,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.core.mail import send_mail
 from django.core.mail import EmailMessage
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 import secrets
@@ -377,6 +378,13 @@ class AdminSavedProjectListView(APIView):
             return Response({"detail": "Требуется вход администратора."}, status=status.HTTP_403_FORBIDDEN)
         projects = SavedProject.objects.select_related("customer").all()
         return Response(AdminSavedProjectSerializer(projects, many=True).data)
+
+
+def django_admin_project_preview(request, pk):
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse({"detail": "Требуется вход администратора."}, status=403)
+    project = get_object_or_404(SavedProject.objects.select_related("customer"), pk=pk)
+    return JsonResponse(AdminSavedProjectSerializer(project).data)
 
 
 class AdminLoginView(APIView):

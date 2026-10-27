@@ -15,7 +15,7 @@ function NumberField({ label, name, value, onChange, hint, min = 0 }) {
 
 const rubles = (value) => new Intl.NumberFormat('ru-RU').format(value) + ' ₽'
 
-export default function App({ onSwitchUser, customer }) {
+export default function App({ onSwitchUser, customer, initialAdminPreview = null }) {
   const [form, setForm] = useState(initialForm)
   const [lengthEdited, setLengthEdited] = useState(false)
   const [result, setResult] = useState(null)
@@ -23,7 +23,7 @@ export default function App({ onSwitchUser, customer }) {
   const [loading, setLoading] = useState(true)
   const [pet, setPet] = useState({ enabled: false, ...petPreset('dachshund') })
   const [screen, setScreen] = useState('calculator')
-  const [adminPreview, setAdminPreview] = useState(null)
+  const [adminPreview, setAdminPreview] = useState(initialAdminPreview)
   const [pdfBusy, setPdfBusy] = useState(false)
   const [pdfMessage, setPdfMessage] = useState('')
 
@@ -88,6 +88,10 @@ export default function App({ onSwitchUser, customer }) {
   }
 
   useEffect(() => {
+    if (initialAdminPreview) loadProject(initialAdminPreview.configuration)
+  }, [initialAdminPreview])
+
+  useEffect(() => {
     const controller = new AbortController()
     const timeout = setTimeout(async () => {
       setLoading(true)
@@ -107,7 +111,7 @@ export default function App({ onSwitchUser, customer }) {
 
   return <main>
     <header><div className="brand">RAMP</div><div><p className="eyebrow">Конструктор пандусов для собак</p><h1>Рассчитайте удобный подъём</h1><p>Задайте размеры — мы рассчитаем геометрию и расположение поперечных реек.</p></div><div className="header-actions">{sessionStorage.getItem(ADMIN_TOKEN_KEY) && <button type="button" className="secondary-button" onClick={() => setScreen('admin')}>Кабинет администратора</button>}{!sessionStorage.getItem(ADMIN_TOKEN_KEY) && localStorage.getItem(CUSTOMER_TOKEN_KEY) && <><button type="button" className="primary-button" onClick={() => document.getElementById('saved-projects-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Перейти к сохранению</button><button type="button" className="secondary-button" onClick={() => document.getElementById('customer-account')?.scrollIntoView({ behavior: 'smooth' })}>Личный кабинет</button></>}<button type="button" className="secondary-button" onClick={onSwitchUser}>Сменить пользователя</button></div></header>
-    {adminPreview && <section className="admin-preview-banner"><div><strong>Просмотр: {adminPreview.name}</strong><p>{adminPreview.customer.name} · {adminPreview.customer.email} · {adminPreview.kind === 'project' ? 'сохранённый проект' : 'отправленное техническое задание'}. Изменения в этом конструкторе не меняют запись клиента.</p></div><button type="button" className="secondary-button" onClick={() => { setAdminPreview(null); setScreen('admin') }}>Вернуться к списку</button></section>}
+    {adminPreview && <section className="admin-preview-banner"><div><strong>Проект заказчика: {adminPreview.name}</strong><p>{adminPreview.customer.name} · {adminPreview.customer.email}{adminPreview.customer.phone ? ` · ${adminPreview.customer.phone}` : ''} · {adminPreview.kind === 'project' ? 'сохранённый проект' : 'отправленное техническое задание'}. Изменения в этом конструкторе не меняют запись клиента.</p></div><button type="button" className="secondary-button" onClick={() => adminPreview.djangoAdmin ? window.location.assign('/admin/ramps/savedproject/') : (setAdminPreview(null), setScreen('admin'))}>Вернуться к списку</button></section>}
     <div className="workspace">
       <section className="panel form-panel">
         <h2>Параметры</h2>

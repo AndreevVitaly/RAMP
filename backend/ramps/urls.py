@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AdminBriefListView, AdminLoginView, AdminSavedProjectListView, AdminSettingsView, CustomerAccountView, CustomerPasswordLoginView, CustomerPasswordView, CustomerRegisterView, RampCalculationView, RampImageDetailView, RampImageListCreateView, RequestEmailCodeView, RequestLoginCodeView, SavedProjectListCreateView, TechnicalBriefListCreateView, TechnicalBriefPdfView, TechnicalBriefPdfPreviewView, TechnicalBriefPdfDownloadView, VerifyEmailCodeView
+from .views import AdminBriefListView, AdminLoginView, AdminSavedProjectListView, AdminSettingsView, CustomerAccountView, CustomerPasswordLoginView, CustomerPasswordView, CustomerRegisterView, RampCalculationView, RampImageDetailView, RampImageListCreateView, RequestEmailCodeView, RequestLoginCodeView, SavedProjectListCreateView, TechnicalBriefListCreateView, TechnicalBriefPdfView, TechnicalBriefPdfPreviewView, TechnicalBriefPdfDownloadView, VerifyEmailCodeView, django_admin_project_preview
 
 urlpatterns = [
     path("calculate/", RampCalculationView.as_view(), name="ramp-calculate"),
@@ -20,6 +20,7 @@ urlpatterns = [
     path("admin/settings/", AdminSettingsView.as_view(), name="admin-settings"),
     path("admin/briefs/", AdminBriefListView.as_view(), name="admin-briefs"),
     path("admin/projects/", AdminSavedProjectListView.as_view(), name="admin-projects"),
+    path("admin/projects/<int:pk>/preview/", django_admin_project_preview, name="django-admin-project-preview"),
     path("admin/login/", AdminLoginView.as_view(), name="admin-login"),
 ]
 
