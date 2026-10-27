@@ -81,9 +81,14 @@ class RampImageSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
+    has_password = serializers.SerializerMethodField()
+
+    def get_has_password(self, customer):
+        return bool(customer.password_hash)
+
     class Meta:
         model = Customer
-        fields = ("id", "name", "email", "phone", "email_verified", "created_at")
+        fields = ("id", "name", "email", "phone", "email_verified", "has_password", "created_at")
         read_only_fields = fields
 
 

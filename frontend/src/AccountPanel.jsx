@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { downloadTechnicalBriefPdf, getAccount, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf } from './api'
+import { downloadTechnicalBriefPdf, getAccount, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
 import { CUSTOMER_TOKEN_KEY } from './accessSession'
 
 export default function AccountPanel({ configuration, result, busy, onLoadProject, onSwitchUser }) {
@@ -13,6 +13,8 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
   const [projects, setProjects] = useState([])
   const [projectName, setProjectName] = useState('')
   const [savingProject, setSavingProject] = useState(false)
+  const [passwords, setPasswords] = useState({ current_password: '', new_password: '' })
+  const [savingPassword, setSavingPassword] = useState(false)
 
   useEffect(() => {
     getAdminSettings().then(setContacts).catch(() => {})
@@ -33,6 +35,19 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
       setMessage(`Проект «${saved.name}» сохранён.`)
     } catch (error) { setMessage(error.message) }
     finally { setSavingProject(false) }
+  }
+
+  async function submitPassword(event) {
+    event.preventDefault(); setMessage(''); setSavingPassword(true)
+    const details = event.currentTarget.closest('details')
+    try {
+      const response = await setCustomerPassword(localStorage.getItem(CUSTOMER_TOKEN_KEY), passwords)
+      setCustomer({ ...customer, has_password: true })
+      setPasswords({ current_password: '', new_password: '' })
+      setMessage(response.detail)
+      details.open = false
+    } catch (error) { setMessage(error.message) }
+    finally { setSavingPassword(false) }
   }
 
   function chooseProject(project, event) {
@@ -65,6 +80,13 @@ export default function AccountPanel({ configuration, result, busy, onLoadProjec
   return <section id="customer-account" className="panel account-panel">
     <div className="section-heading"><div><p className="eyebrow">Личный кабинет</p><h2>{customer ? `Здравствуйте, ${customer.name}` : 'Вход и регистрация'}</h2></div>{customer && <button type="button" className="link-button" onClick={onSwitchUser}>Выйти</button>}</div>
     {!customer && <div className="account-form compact"><p>Войдите по email, чтобы увидеть свои проекты и отправить техническое задание.</p><button className="primary-button" type="button" onClick={onSwitchUser}>Войти в личный кабинет</button></div>}
+    {customer && <details className="project-dropdown"><summary>{customer.has_password ? 'Изменить пароль' : 'Задать пароль для входа'}</summary>
+      <form className="access-form" onSubmit={submitPassword}>
+        {customer.has_password && <label className="field"><span>Текущий пароль</span><input required type="password" autoComplete="current-password" value={passwords.current_password} onChange={(event) => setPasswords({ ...passwords, current_password: event.target.value })} /></label>}
+        <label className="field"><span>Новый пароль (не менее 10 символов)</span><input required type="password" minLength="10" maxLength="128" autoComplete="new-password" value={passwords.new_password} onChange={(event) => setPasswords({ ...passwords, new_password: event.target.value })} /></label>
+        <button className="primary-button" type="submit" disabled={savingPassword}>Сохранить пароль</button>
+      </form>
+    </details>}
     {customer && <section className="saved-projects" aria-labelledby="saved-projects-title">
       <div><h3 id="saved-projects-title">Мои проекты</h3><p>Сохраните размеры изделия, чтобы вернуться к ним позже.</p></div>
       <form className="project-save-form" onSubmit={saveCurrentProject}>

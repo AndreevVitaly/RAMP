@@ -42,6 +42,14 @@ export async function requestEmailCode(fields) {
   return parseResponse(await fetch('/api/ramp/account/request-code/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }))
 }
 
+export async function registerCustomer(fields) {
+  return parseResponse(await fetch('/api/ramp/account/register/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }))
+}
+
+export async function loginCustomer(email, password) {
+  return parseResponse(await fetch('/api/ramp/account/login/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }))
+}
+
 export async function requestLoginCode(email) {
   return parseResponse(await fetch('/api/ramp/account/login/request-code/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }))
 }
@@ -52,6 +60,10 @@ export async function verifyEmailCode(email, code) {
 
 export async function getAccount(token) {
   return parseResponse(await fetch('/api/ramp/account/me/', { headers: { Authorization: `Bearer ${token}` } }))
+}
+
+export async function setCustomerPassword(token, fields) {
+  return parseResponse(await fetch('/api/ramp/account/password/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(fields) }))
 }
 
 export async function getSavedProjects(token) {

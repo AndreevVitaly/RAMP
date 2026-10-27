@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.core.mail import send_mail
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
@@ -14,7 +17,7 @@ import secrets
 
 from .accounts import admin_authorized, customer_from_request, deliver_brief, digest, issue_admin_token, issue_session, normalize_phone
 from .models import AdminContactSettings, Customer, PhoneVerification, RampImage, SavedProject, TechnicalBrief
-from .rate_limit import allow_email_code_request
+from .rate_limit import allow_customer_auth_attempt, allow_email_code_request
 from .serializers import AdminContactSettingsSerializer, AdminSavedProjectSerializer, CustomerSerializer, RampCalculationSerializer, RampImageSerializer, SavedProjectSerializer, TechnicalBriefSerializer
 from .services import RampGeometryError, calculate_ramp_configuration
 
@@ -65,6 +68,41 @@ class RampImageDetailView(RetrieveUpdateDestroyAPIView):
         storage, name = instance.file.storage, instance.file.name
         instance.delete()
         storage.delete(name)
+
+
+class CustomerRegisterView(APIView):
+    def post(self, request):
+        name = str(request.data.get("name") or "").strip()
+        email = str(request.data.get("email") or "").strip().lower()
+        password = str(request.data.get("password") or "")
+        if not name or len(name) > 120:
+            return Response({"detail": "Укажите имя до 120 символов."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({"detail": "Укажите корректный email."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(password) < 10 or len(password) > 128:
+            return Response({"detail": "Пароль должен содержать от 10 до 128 символов."}, status=status.HTTP_400_BAD_REQUEST)
+        if not allow_customer_auth_attempt(request, email, "register"):
+            return Response({"detail": "Слишком много попыток. Попробуйте позже."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        if Customer.objects.filter(email__iexact=email).exists():
+            return Response({"detail": "Этот email уже зарегистрирован. Войдите в аккаунт."}, status=status.HTTP_400_BAD_REQUEST)
+        customer = Customer.objects.create(name=name, email=email, password_hash=make_password(password))
+        return Response({"token": issue_session(customer), "customer": CustomerSerializer(customer).data}, status=status.HTTP_201_CREATED)
+
+
+class CustomerPasswordLoginView(APIView):
+    def post(self, request):
+        email = str(request.data.get("email") or "").strip().lower()
+        password = str(request.data.get("password") or "")
+        if not email or not password:
+            return Response({"detail": "Введите email и пароль."}, status=status.HTTP_400_BAD_REQUEST)
+        if not allow_customer_auth_attempt(request, email, "login"):
+            return Response({"detail": "Слишком много попыток. Попробуйте позже."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        customer = Customer.objects.filter(email__iexact=email).first()
+        if not customer or not customer.password_hash or not check_password(password, customer.password_hash):
+            return Response({"detail": "Неверный email или пароль."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"token": issue_session(customer), "customer": CustomerSerializer(customer).data})
 
 
 class RequestEmailCodeView(APIView):
@@ -163,6 +201,20 @@ class VerifyEmailCodeView(APIView):
 class CustomerAccountView(APIView):
     def get(self, request):
         return Response(CustomerSerializer(customer_from_request(request)).data)
+
+
+class CustomerPasswordView(APIView):
+    def post(self, request):
+        customer = customer_from_request(request)
+        current_password = str(request.data.get("current_password") or "")
+        new_password = str(request.data.get("new_password") or "")
+        if customer.password_hash and not check_password(current_password, customer.password_hash):
+            return Response({"detail": "Текущий пароль указан неверно."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(new_password) < 10 or len(new_password) > 128:
+            return Response({"detail": "Новый пароль должен содержать от 10 до 128 символов."}, status=status.HTTP_400_BAD_REQUEST)
+        customer.password_hash = make_password(new_password)
+        customer.save(update_fields=("password_hash", "updated_at"))
+        return Response({"detail": "Пароль сохранён."})
 
 
 class SavedProjectListCreateView(APIView):

@@ -64,6 +64,7 @@ class AdminContactSettings(models.Model):
 class Customer(models.Model):
     name = models.CharField("Имя", max_length=120)
     email = models.EmailField("Электронная почта")
+    password_hash = models.CharField("Хеш пароля", max_length=128, blank=True, default="")
     phone = models.CharField("Телефон", max_length=30, unique=True, null=True, blank=True)
     email_verified = models.BooleanField("Почта подтверждена", default=False)
     created_at = models.DateTimeField("Зарегистрирован", auto_now_add=True)
@@ -93,6 +94,13 @@ class PhoneVerification(models.Model):
 
 
 class EmailCodeRequest(models.Model):
+    email_digest = models.CharField(max_length=64, db_index=True)
+    ip_digest = models.CharField(max_length=64, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+
+class CustomerAuthAttempt(models.Model):
+    purpose = models.CharField(max_length=12)
     email_digest = models.CharField(max_length=64, db_index=True)
     ip_digest = models.CharField(max_length=64, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
