@@ -97,8 +97,8 @@ class SavedProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SavedProject
-        fields = ("id", "name", "configuration", "created_at", "updated_at")
-        read_only_fields = ("id", "created_at", "updated_at")
+        fields = ("id", "name", "configuration", "status", "planned_completion_date", "selected_by_admin", "completed_at", "created_at", "updated_at")
+        read_only_fields = ("id", "status", "planned_completion_date", "selected_by_admin", "completed_at", "created_at", "updated_at")
 
     def validate_configuration(self, value):
         if not isinstance(value, dict):
@@ -132,7 +132,7 @@ class AdminSavedProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SavedProject
-        fields = ("id", "name", "customer", "configuration", "created_at", "updated_at")
+        fields = ("id", "name", "customer", "configuration", "status", "planned_completion_date", "selected_by_admin", "completed_at", "created_at", "updated_at")
         read_only_fields = fields
 
 

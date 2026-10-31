@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { getAdminBriefs, getAdminProjects, getAdminSettings, saveAdminSettings } from './api'
+import { getAdminBriefs, getAdminProjects, getAdminSettings, saveAdminSettings, updateAdminProjectStatus } from './api'
+
+const todayLocal = () => {
+  const today = new Date()
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+}
 
 export default function AdminPanel({ onClose, onSwitchUser, onOpenConfiguration }) {
   const adminToken = sessionStorage.getItem('ramp_admin_token') || ''
@@ -8,6 +13,8 @@ export default function AdminPanel({ onClose, onSwitchUser, onOpenConfiguration 
   const [projects, setProjects] = useState([])
   const [loadingEntries, setLoadingEntries] = useState(true)
   const [message, setMessage] = useState('')
+  const [plannedDates, setPlannedDates] = useState({})
+  const [updatingProjectId, setUpdatingProjectId] = useState(null)
 
   useEffect(() => {
     getAdminSettings().then(setSettings).catch(() => {})
@@ -35,6 +42,16 @@ export default function AdminPanel({ onClose, onSwitchUser, onOpenConfiguration 
     finally { setLoadingEntries(false) }
   }
 
+  async function updateProject(project, action) {
+    setMessage(''); setUpdatingProjectId(project.id)
+    try {
+      const updated = await updateAdminProjectStatus(adminToken, project.id, { action, ...(action === 'accept' ? { planned_completion_date: plannedDates[project.id] } : {}) })
+      setProjects((current) => current.map((item) => item.id === project.id ? updated : action === 'accept' && item.customer.id === project.customer.id && item.status === 'submitted' ? { ...item, status: 'saved' } : item))
+      setMessage(action === 'accept' ? `Проект «${project.name}» принят в работу.` : `Проект «${project.name}» отмечен выполненным.`)
+    } catch (error) { setMessage(error.message) }
+    finally { setUpdatingProjectId(null) }
+  }
+
   return <main><header><div className="brand">RAMP</div><div><p className="eyebrow">Рабочее пространство</p><h1>Кабинет администратора</h1><p>Контакты для клиентов и входящие технические задания.</p></div><div className="header-actions"><button type="button" className="secondary-button" onClick={onClose}>Вернуться к конструктору</button><button type="button" className="secondary-button" onClick={onSwitchUser}>Сменить пользователя</button></div></header>
     <div className="admin-grid">
       <form className="panel admin-settings" onSubmit={save}><h2>Контакты и доставка</h2>
@@ -48,7 +65,7 @@ export default function AdminPanel({ onClose, onSwitchUser, onOpenConfiguration 
       </form>
       <div className="admin-orders">
         <section className="panel admin-briefs"><div className="section-heading"><div><h2>Сохранённые проекты клиентов</h2><p>Параметры, которые клиенты сохранили в личном кабинете.</p></div><button type="button" className="secondary-button" onClick={load} disabled={loadingEntries}>Обновить</button></div>
-          {loadingEntries ? <p>Загружаем проекты…</p> : !projects.length ? <p>Сохранённых проектов пока нет.</p> : projects.map((project) => <button key={project.id} className="client-project-card" type="button" onClick={() => onOpenConfiguration({ kind: 'project', id: project.id, name: project.name, customer: project.customer, configuration: project.configuration })}><span className="client-project-card-top"><strong>{project.name}</strong><small>Сохранённый проект</small></span><span>{project.customer.name} · {project.customer.email}</span><span>{project.configuration.height_cm} × {project.configuration.ramp_length_cm} × {project.configuration.width_cm} см · {new Date(project.updated_at).toLocaleString('ru-RU')}</span><em>Открыть в конструкторе →</em></button>)}
+          {loadingEntries ? <p>Загружаем проекты…</p> : !projects.length ? <p>Сохранённых проектов пока нет.</p> : projects.map((project) => <article key={project.id} className="client-project-card"><div className="client-project-card-top"><strong>{project.name}</strong><span className={`project-status status-${project.status}`}>{({ saved: 'СОХРАНЁН', submitted: 'ПЕРЕДАН КЛИЕНТОМ', in_progress: 'В РАБОТЕ', completed: 'ВЫПОЛНЕНО' })[project.status] || project.status}</span></div><span>{project.customer.name} · {project.customer.email}</span><span>{project.configuration.height_cm} × {project.configuration.ramp_length_cm} × {project.configuration.width_cm} см · {new Date(project.updated_at).toLocaleString('ru-RU')}</span>{project.selected_by_admin && <small>Выбран администратором</small>}{project.planned_completion_date && <small>Плановая дата выполнения: {new Date(`${project.planned_completion_date}T12:00:00`).toLocaleDateString('ru-RU')}</small>}<div className="project-card-actions"><button type="button" className="secondary-button" onClick={() => onOpenConfiguration({ kind: 'project', id: project.id, name: project.name, customer: project.customer, configuration: project.configuration })}>Открыть в конструкторе</button>{['saved', 'submitted'].includes(project.status) && <><label className="project-date-field">Плановая дата выполнения<input type="date" min={todayLocal()} value={plannedDates[project.id] || ''} onChange={(event) => setPlannedDates((current) => ({ ...current, [project.id]: event.target.value }))} /></label><button type="button" className="primary-button" disabled={!plannedDates[project.id] || updatingProjectId !== null} onClick={() => updateProject(project, 'accept')}>Принять в работу</button></>}{project.status === 'in_progress' && <button type="button" className="primary-button" disabled={updatingProjectId !== null} onClick={() => updateProject(project, 'complete')}>Отметить выполненным</button>}</div></article>)}
         </section>
         <section className="panel admin-briefs"><div className="section-heading"><h2>Отправленные технические задания</h2></div>
           {loadingEntries ? <p>Загружаем задания…</p> : !briefs.length ? <p>Клиенты пока не отправили технических заданий. Сохранённые проекты показаны выше.</p> : briefs.map((brief) => <article key={brief.id} className="brief-card"><div><strong>№{brief.id} · {brief.customer.name}</strong><time>{new Date(brief.created_at).toLocaleString('ru-RU')}</time></div><p>{[brief.customer.phone, brief.customer.email].filter(Boolean).join(' · ')}</p><p>{brief.message || 'Без комментария'}</p><small>{brief.configuration.height_cm} × {brief.configuration.ramp_length_cm} × {brief.configuration.width_cm} см · {brief.requested_channels.join(', ')}</small><button type="button" className="link-button" onClick={() => onOpenConfiguration({ kind: 'brief', id: brief.id, name: `Техническое задание №${brief.id}`, customer: brief.customer, configuration: brief.configuration })}>Открыть в конструкторе →</button></article>)}

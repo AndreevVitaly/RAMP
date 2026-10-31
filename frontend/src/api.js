@@ -89,6 +89,10 @@ export async function deleteSavedProject(token, id) {
   return parseResponse(await fetch(`/api/ramp/account/projects/${id}/`, { method: 'DELETE', headers: authHeaders(token) }))
 }
 
+export async function submitSavedProject(token, id) {
+  return parseResponse(await fetch(`/api/ramp/account/projects/${id}/submit/`, { method: 'POST', headers: authHeaders(token) }))
+}
+
 export async function sendTechnicalBrief(token, fields) {
   return parseResponse(await fetch('/api/ramp/account/briefs/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
@@ -143,6 +147,10 @@ export async function getAdminBriefs(token, signal) {
 
 export async function getAdminProjects(token) {
   return parseResponse(await fetch('/api/ramp/admin/projects/', { headers: authHeaders(token) }))
+}
+
+export async function updateAdminProjectStatus(token, id, fields) {
+  return parseResponse(await fetch(`/api/ramp/admin/projects/${id}/status/`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
 export async function getDjangoAdminProject(id, signal) {

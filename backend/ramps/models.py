@@ -114,9 +114,19 @@ class CustomerSession(models.Model):
 
 
 class SavedProject(models.Model):
+    class Status(models.TextChoices):
+        SAVED = "saved", "Сохранён"
+        SUBMITTED = "submitted", "Передан в работу"
+        IN_PROGRESS = "in_progress", "В работе"
+        COMPLETED = "completed", "Выполнено"
+
     customer = models.ForeignKey(Customer, verbose_name="Клиент", on_delete=models.CASCADE, related_name="saved_projects")
     name = models.CharField("Название", max_length=120)
     configuration = models.JSONField("Параметры изделия", default=dict)
+    status = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.SAVED)
+    planned_completion_date = models.DateField("Плановая дата выполнения", null=True, blank=True)
+    selected_by_admin = models.BooleanField("Выбран администратором", default=False)
+    completed_at = models.DateTimeField("Выполнен", null=True, blank=True)
     created_at = models.DateTimeField("Создан", auto_now_add=True)
     updated_at = models.DateTimeField("Обновлён", auto_now=True)
 

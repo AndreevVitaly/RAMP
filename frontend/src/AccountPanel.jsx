@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { deleteSavedProject, downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
+import { deleteSavedProject, downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword, submitSavedProject } from './api'
 import { CUSTOMER_TOKEN_KEY } from './accessSession'
 import { captureRampProfile } from './profileSnapshot'
 
@@ -16,6 +16,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
   const [projectName, setProjectName] = useState('')
   const [savingProject, setSavingProject] = useState(false)
   const [deletingProjectId, setDeletingProjectId] = useState(null)
+  const [submittingProjectId, setSubmittingProjectId] = useState(null)
   const [passwords, setPasswords] = useState({ current_password: '', new_password: '' })
   const [savingPassword, setSavingPassword] = useState(false)
 
@@ -60,9 +61,18 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
   }
 
   function chooseProject(project, event) {
-    event.currentTarget.closest('details').open = false
     onLoadProject(project.configuration)
     setMessage(`Параметры проекта «${project.name}» загружены в конструктор.`)
+  }
+
+  async function submitProject(project) {
+    setMessage(''); setSubmittingProjectId(project.id)
+    try {
+      const updated = await submitSavedProject(localStorage.getItem(CUSTOMER_TOKEN_KEY), project.id)
+      setProjects((current) => current.map((item) => item.id === project.id ? updated : item.status === 'submitted' ? { ...item, status: 'saved' } : item))
+      setMessage(`Проект «${project.name}» передан администратору для рассмотрения.`)
+    } catch (error) { handleAccountError(error) }
+    finally { setSubmittingProjectId(null) }
   }
 
   async function removeProject(project) {
@@ -124,7 +134,12 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
         <label className="field"><span>Название проекта (необязательно)</span><input maxLength={120} placeholder="Например, пандус для дивана" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label>
         <button className="primary-button" type="submit" disabled={!result || busy || savingProject}>{savingProject ? 'Сохраняем…' : 'Сохранить проект'}</button>
       </form>
-      {projects.length ? <details className="project-dropdown"><summary>Открыть сохранённый проект ({projects.length})</summary><div className="project-dropdown-list">{projects.map((project) => <div className="project-dropdown-item" key={project.id}><button type="button" onClick={(event) => chooseProject(project, event)}><strong>{project.name}</strong><small>{new Date(project.created_at).toLocaleDateString('ru-RU')}</small></button><button className="project-delete-button" type="button" disabled={deletingProjectId !== null} onClick={() => removeProject(project)} aria-label={`Удалить проект «${project.name}»`}>{deletingProjectId === project.id ? 'Удаляем…' : 'Удалить'}</button></div>)}</div></details> : <p>Пока нет сохранённых проектов.</p>}
+      {projects.length ? <div className="saved-project-list">{projects.map((project) => <article className="saved-project-card" key={project.id}>
+        <div className="project-card-heading"><strong>{project.name}</strong><span className={`project-status status-${project.status}`}>{({ saved: 'СОХРАНЁН', submitted: 'ПЕРЕДАН В РАБОТУ', in_progress: 'В РАБОТЕ', completed: 'ВЫПОЛНЕНО' })[project.status] || project.status}</span></div>
+        <small>{new Date(project.created_at).toLocaleDateString('ru-RU')}{project.selected_by_admin ? ' · Выбран администратором' : ''}</small>
+        {project.planned_completion_date && <small>Плановая дата выполнения: {new Date(`${project.planned_completion_date}T12:00:00`).toLocaleDateString('ru-RU')}</small>}
+        <div className="project-card-actions"><button className="secondary-button" type="button" onClick={() => chooseProject(project)}>Открыть в конструкторе</button>{project.status === 'saved' && <button className="primary-button" type="button" disabled={submittingProjectId !== null} onClick={() => submitProject(project)}>{submittingProjectId === project.id ? 'Передаём…' : 'Передать в работу'}</button>}{['saved', 'submitted'].includes(project.status) && <button className="project-delete-button" type="button" disabled={deletingProjectId !== null} onClick={() => removeProject(project)}>{deletingProjectId === project.id ? 'Удаляем…' : 'Удалить'}</button>}</div>
+      </article>)}</div> : <p>Пока нет сохранённых проектов.</p>}
     </section>}
     {customer && result && <form className="brief-form" onSubmit={submitBrief}>
       <div className="account-summary"><span>{customer.email}</span>{customer.phone && <span>{customer.phone}</span>}</div>

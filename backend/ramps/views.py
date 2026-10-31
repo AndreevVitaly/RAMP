@@ -14,7 +14,7 @@ from django.core.mail import EmailMessage
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from datetime import timedelta
+from datetime import date, timedelta
 import base64
 import binascii
 import secrets
@@ -253,8 +253,23 @@ class SavedProjectDetailView(APIView):
     def delete(self, request, pk):
         customer = customer_from_request(request)
         project = get_object_or_404(SavedProject, pk=pk, customer=customer)
+        if project.status in (SavedProject.Status.IN_PROGRESS, SavedProject.Status.COMPLETED):
+            return Response({"detail": "Проект в работе или выполнен; удалить его нельзя."}, status=status.HTTP_400_BAD_REQUEST)
         project.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SavedProjectSubmitView(APIView):
+    def post(self, request, pk):
+        customer = customer_from_request(request)
+        project = get_object_or_404(SavedProject, pk=pk, customer=customer)
+        if project.status != SavedProject.Status.SAVED:
+            return Response({"detail": "Передать можно только сохранённый проект."}, status=status.HTTP_400_BAD_REQUEST)
+        SavedProject.objects.filter(customer=customer, status=SavedProject.Status.SUBMITTED).update(status=SavedProject.Status.SAVED)
+        project.status = SavedProject.Status.SUBMITTED
+        project.selected_by_admin = False
+        project.save(update_fields=("status", "selected_by_admin", "updated_at"))
+        return Response(SavedProjectSerializer(project).data)
 
 
 class TechnicalBriefListCreateView(APIView):
@@ -406,6 +421,38 @@ class AdminSavedProjectListView(APIView):
             return Response({"detail": "Требуется вход администратора."}, status=status.HTTP_403_FORBIDDEN)
         projects = SavedProject.objects.select_related("customer").all()
         return Response(AdminSavedProjectSerializer(projects, many=True).data)
+
+
+class AdminSavedProjectStatusView(APIView):
+    def post(self, request, pk):
+        if not admin_authorized(request):
+            return Response({"detail": "Требуется вход администратора."}, status=status.HTTP_403_FORBIDDEN)
+        project = get_object_or_404(SavedProject.objects.select_related("customer"), pk=pk)
+        action = request.data.get("action")
+        if action == "accept":
+            if project.status not in (SavedProject.Status.SAVED, SavedProject.Status.SUBMITTED):
+                return Response({"detail": "Принять можно только сохранённый или переданный проект."}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                planned_date = date.fromisoformat(request.data.get("planned_completion_date", ""))
+            except (TypeError, ValueError):
+                return Response({"detail": "Укажите плановую дату выполнения."}, status=status.HTTP_400_BAD_REQUEST)
+            if planned_date < timezone.localdate():
+                return Response({"detail": "Плановая дата не может быть в прошлом."}, status=status.HTTP_400_BAD_REQUEST)
+            selected_by_admin = project.status == SavedProject.Status.SAVED
+            SavedProject.objects.filter(customer=project.customer, status=SavedProject.Status.SUBMITTED).exclude(pk=project.pk).update(status=SavedProject.Status.SAVED)
+            project.status = SavedProject.Status.IN_PROGRESS
+            project.planned_completion_date = planned_date
+            project.selected_by_admin = selected_by_admin
+            project.save(update_fields=("status", "planned_completion_date", "selected_by_admin", "updated_at"))
+        elif action == "complete":
+            if project.status != SavedProject.Status.IN_PROGRESS:
+                return Response({"detail": "Выполнить можно только проект в работе."}, status=status.HTTP_400_BAD_REQUEST)
+            project.status = SavedProject.Status.COMPLETED
+            project.completed_at = timezone.now()
+            project.save(update_fields=("status", "completed_at", "updated_at"))
+        else:
+            return Response({"detail": "Неизвестное действие."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminSavedProjectSerializer(project).data)
 
 
 def django_admin_project_preview(request, pk):

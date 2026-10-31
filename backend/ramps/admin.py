@@ -115,7 +115,7 @@ class TechnicalBriefAdmin(ReadOnlyAdmin):
 
 @admin.register(SavedProject)
 class SavedProjectAdmin(ReadOnlyAdmin):
-    list_display = ("id", "project_link", "customer", "updated_at")
+    list_display = ("id", "project_link", "customer", "status", "planned_completion_date", "updated_at")
     list_display_links = None
     search_fields = ("name", "customer__name", "customer__email")
     list_select_related = ("customer",)
