@@ -36,6 +36,22 @@ class SavedProjectsTests(APITestCase):
         self.assertEqual(self.client.get(self.url).data, [])
         self.assertEqual(SavedProject.objects.filter(customer=self.other).count(), 0)
 
+    def test_owner_can_delete_project_but_other_customer_cannot(self):
+        created = self.client.post(self.url, {"configuration": self.configuration}, format="json")
+        detail_url = f"{self.url}{created.data['id']}/"
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.other_token}")
+        self.assertEqual(self.client.delete(detail_url).status_code, 404)
+        self.assertEqual(SavedProject.objects.count(), 1)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        self.assertEqual(self.client.delete(detail_url).status_code, 204)
+        self.assertEqual(self.client.get(self.url).data, [])
+
+    def test_guest_cannot_delete_project(self):
+        created = self.client.post(self.url, {"configuration": self.configuration}, format="json")
+        self.client.credentials()
+        self.assertIn(self.client.delete(f"{self.url}{created.data['id']}/").status_code, (401, 403))
+        self.assertEqual(SavedProject.objects.count(), 1)
+
     def test_guest_cannot_list_or_save(self):
         self.client.credentials()
         self.assertIn(self.client.get(self.url).status_code, (401, 403))

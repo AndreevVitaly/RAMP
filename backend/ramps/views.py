@@ -249,6 +249,14 @@ class SavedProjectListCreateView(APIView):
         return Response(SavedProjectSerializer(project).data, status=status.HTTP_201_CREATED)
 
 
+class SavedProjectDetailView(APIView):
+    def delete(self, request, pk):
+        customer = customer_from_request(request)
+        project = get_object_or_404(SavedProject, pk=pk, customer=customer)
+        project.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class TechnicalBriefListCreateView(APIView):
     def get(self, request):
         customer = customer_from_request(request)

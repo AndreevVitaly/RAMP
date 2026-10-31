@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AdminBriefListView, AdminLoginView, AdminSavedProjectListView, AdminSettingsView, CustomerAccountView, CustomerPasswordLoginView, CustomerPasswordView, CustomerRegisterView, RampCalculationView, RampImageDetailView, RampImageListCreateView, RequestEmailCodeView, RequestLoginCodeView, SavedProjectListCreateView, TechnicalBriefListCreateView, TechnicalBriefPdfView, TechnicalBriefPdfPreviewView, TechnicalBriefPdfDownloadView, VerifyEmailCodeView, django_admin_project_preview
+from .views import AdminBriefListView, AdminLoginView, AdminSavedProjectListView, AdminSettingsView, CustomerAccountView, CustomerPasswordLoginView, CustomerPasswordView, CustomerRegisterView, RampCalculationView, RampImageDetailView, RampImageListCreateView, RequestEmailCodeView, RequestLoginCodeView, SavedProjectDetailView, SavedProjectListCreateView, TechnicalBriefListCreateView, TechnicalBriefPdfView, TechnicalBriefPdfPreviewView, TechnicalBriefPdfDownloadView, VerifyEmailCodeView, django_admin_project_preview
 
 urlpatterns = [
     path("calculate/", RampCalculationView.as_view(), name="ramp-calculate"),
@@ -13,6 +13,7 @@ urlpatterns = [
     path("account/me/", CustomerAccountView.as_view(), name="customer-account"),
     path("account/password/", CustomerPasswordView.as_view(), name="customer-password"),
     path("account/projects/", SavedProjectListCreateView.as_view(), name="saved-projects"),
+    path("account/projects/<int:pk>/", SavedProjectDetailView.as_view(), name="saved-project-detail"),
     path("account/briefs/", TechnicalBriefListCreateView.as_view(), name="technical-briefs"),
     path("account/briefs/pdf/", TechnicalBriefPdfView.as_view(), name="technical-brief-pdf"),
     path("account/briefs/pdf/download/", TechnicalBriefPdfPreviewView.as_view(), name="technical-brief-pdf-preview"),

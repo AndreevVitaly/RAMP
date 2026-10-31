@@ -201,6 +201,11 @@ button:disabled { opacity: .55; cursor: default; }
 .project-dropdown-list button { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 3px; padding: 10px; border: 0; border-radius: 8px; background: #fff; color: #20231f; font: inherit; text-align: left; cursor: pointer; }
 .project-dropdown-list button:hover, .project-dropdown-list button:focus-visible { background: #edf3eb; }
 .project-dropdown-list small { color: #667068; }
+.project-dropdown-item { display: flex; align-items: center; gap: 6px; border-radius: 8px; }
+.project-dropdown-item + .project-dropdown-item { border-top: 1px solid #edf0ec; }
+.project-dropdown-item > button:first-child { min-width: 0; flex: 1; }
+.project-dropdown-item .project-delete-button { width: auto; flex: none; color: #a13e37; font-size: 13px; }
+.project-dropdown-item .project-delete-button:disabled { opacity: .55; cursor: wait; }
 .channel-picker { margin: 0; padding: 14px; border: 1px solid #d4d9d4; border-radius: 10px; display: flex; gap: 18px; flex-wrap: wrap; }
 .channel-picker legend { padding: 0 6px; font-size: 12px; color: #6f756f; }
 .account-message { padding: 11px 13px; border-radius: 9px; background: #e4ebe6; color: #385443; font-size: 13px; }

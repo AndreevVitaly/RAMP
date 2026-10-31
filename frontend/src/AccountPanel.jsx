@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
+import { deleteSavedProject, downloadCurrentBriefPdf, downloadTechnicalBriefPdf, getAdminSettings, getSavedProjects, saveProject, sendTechnicalBrief, sendTechnicalBriefPdf, setCustomerPassword } from './api'
 import { CUSTOMER_TOKEN_KEY } from './accessSession'
 import { captureRampProfile } from './profileSnapshot'
 
@@ -15,6 +15,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
   const [projects, setProjects] = useState([])
   const [projectName, setProjectName] = useState('')
   const [savingProject, setSavingProject] = useState(false)
+  const [deletingProjectId, setDeletingProjectId] = useState(null)
   const [passwords, setPasswords] = useState({ current_password: '', new_password: '' })
   const [savingPassword, setSavingPassword] = useState(false)
 
@@ -62,6 +63,17 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
     event.currentTarget.closest('details').open = false
     onLoadProject(project.configuration)
     setMessage(`Параметры проекта «${project.name}» загружены в конструктор.`)
+  }
+
+  async function removeProject(project) {
+    if (!window.confirm(`Удалить проект «${project.name}»? Это действие нельзя отменить.`)) return
+    setMessage(''); setDeletingProjectId(project.id)
+    try {
+      await deleteSavedProject(localStorage.getItem(CUSTOMER_TOKEN_KEY), project.id)
+      setProjects((current) => current.filter((item) => item.id !== project.id))
+      setMessage(`Проект «${project.name}» удалён.`)
+    } catch (error) { handleAccountError(error) }
+    finally { setDeletingProjectId(null) }
   }
 
   async function submitBrief(event) {
@@ -112,7 +124,7 @@ export default function AccountPanel({ customer: initialCustomer, configuration,
         <label className="field"><span>Название проекта (необязательно)</span><input maxLength={120} placeholder="Например, пандус для дивана" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label>
         <button className="primary-button" type="submit" disabled={!result || busy || savingProject}>{savingProject ? 'Сохраняем…' : 'Сохранить проект'}</button>
       </form>
-      {projects.length ? <details className="project-dropdown"><summary>Открыть сохранённый проект ({projects.length})</summary><div className="project-dropdown-list">{projects.map((project) => <button key={project.id} type="button" onClick={(event) => chooseProject(project, event)}><strong>{project.name}</strong><small>{new Date(project.created_at).toLocaleDateString('ru-RU')}</small></button>)}</div></details> : <p>Пока нет сохранённых проектов.</p>}
+      {projects.length ? <details className="project-dropdown"><summary>Открыть сохранённый проект ({projects.length})</summary><div className="project-dropdown-list">{projects.map((project) => <div className="project-dropdown-item" key={project.id}><button type="button" onClick={(event) => chooseProject(project, event)}><strong>{project.name}</strong><small>{new Date(project.created_at).toLocaleDateString('ru-RU')}</small></button><button className="project-delete-button" type="button" disabled={deletingProjectId !== null} onClick={() => removeProject(project)} aria-label={`Удалить проект «${project.name}»`}>{deletingProjectId === project.id ? 'Удаляем…' : 'Удалить'}</button></div>)}</div></details> : <p>Пока нет сохранённых проектов.</p>}
     </section>}
     {customer && result && <form className="brief-form" onSubmit={submitBrief}>
       <div className="account-summary"><span>{customer.email}</span>{customer.phone && <span>{customer.phone}</span>}</div>

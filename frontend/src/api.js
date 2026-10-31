@@ -85,6 +85,10 @@ export async function saveProject(token, fields) {
   return parseResponse(await fetch('/api/ramp/account/projects/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
 
+export async function deleteSavedProject(token, id) {
+  return parseResponse(await fetch(`/api/ramp/account/projects/${id}/`, { method: 'DELETE', headers: authHeaders(token) }))
+}
+
 export async function sendTechnicalBrief(token, fields) {
   return parseResponse(await fetch('/api/ramp/account/briefs/', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(token) }, body: JSON.stringify(fields) }))
 }
